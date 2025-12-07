@@ -43,3 +43,40 @@
   flex: 1;
   position: relative;
 }
+
+.toolbar {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.toolbar-button {
+  padding: 0.5rem 1rem;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.toolbar-button:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.toolbar-button:active {
+  transform: translateY(0);
+}

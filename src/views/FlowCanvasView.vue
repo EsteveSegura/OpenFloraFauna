@@ -16,6 +16,23 @@
 
     <!-- Canvas de VueFlow -->
     <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent>
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="toolbar-button" @click="handleExport" title="Export flow to JSON">
+          💾 Export
+        </button>
+        <button class="toolbar-button" @click="handleImport" title="Import flow from JSON">
+          📂 Import
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json,application/json"
+          style="display: none"
+          @change="onFileSelected"
+        />
+      </div>
+
       <VueFlow
         v-model:nodes="nodes"
         v-model:edges="edges"
@@ -37,7 +54,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
@@ -46,10 +63,12 @@ import { useFlowStore } from '@/stores/flow'
 import { validateConnection } from '@/lib/connection'
 import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
+import { downloadFlow, loadFlowFromFile } from '@/lib/flow-io'
 import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()
 const { nodes, edges } = storeToRefs(flowStore)
+const fileInput = ref(null)
 
 // Create node types mapping from registry
 const nodeTypes = {}
@@ -166,6 +185,48 @@ function onConnect(connection) {
 
   flowStore.addEdge(newEdge)
   flowStore.clearError()
+}
+
+// Export flow to JSON file
+function handleExport() {
+  try {
+    downloadFlow(flowStore)
+    console.log('Flow exported successfully')
+  } catch (error) {
+    console.error('Error exporting flow:', error)
+    flowStore.setError('Failed to export flow')
+  }
+}
+
+// Trigger file input for import
+function handleImport() {
+  fileInput.value?.click()
+}
+
+// Handle file selection
+async function onFileSelected(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  try {
+    const result = await loadFlowFromFile(file, flowStore)
+
+    if (result.success) {
+      console.log('Flow imported successfully')
+      // Clear file input for next import
+      if (fileInput.value) {
+        fileInput.value.value = ''
+      }
+    } else {
+      console.error('Import failed:', result.error)
+      flowStore.setError(result.error || 'Failed to import flow')
+      setTimeout(() => flowStore.clearError(), 5000)
+    }
+  } catch (error) {
+    console.error('Error importing flow:', error)
+    flowStore.setError('Failed to import flow')
+    setTimeout(() => flowStore.clearError(), 5000)
+  }
 }
 
 // Seleccionar nodo
