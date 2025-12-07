@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { createNode, createEdge, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 
 export const useFlowStore = defineStore('flow', {
   state: () => ({
@@ -81,35 +82,34 @@ export const useFlowStore = defineStore('flow', {
     },
 
     initMockNodes() {
-      // Nodos de ejemplo para pruebas
+      // Mock nodes for testing
       this.nodes = [
-        {
-          id: 'node-1',
-          type: 'image',
-          position: { x: 100, y: 100 },
-          data: { label: 'Imagen 1' }
-        },
-        {
-          id: 'node-2',
-          type: 'generator',
-          position: { x: 400, y: 100 },
-          data: { label: 'Generador 1', prompt: '' }
-        },
-        {
-          id: 'node-3',
-          type: 'generator',
-          position: { x: 250, y: 300 },
-          data: { label: 'Generador 2', prompt: '' }
-        }
+        createNode(
+          'node-1',
+          NODE_TYPES.IMAGE,
+          { x: 100, y: 100 },
+          { label: 'Image 1' },
+          getNodeIOConfig(NODE_TYPES.IMAGE)
+        ),
+        createNode(
+          'node-2',
+          NODE_TYPES.IMAGE_GENERATOR,
+          { x: 400, y: 100 },
+          { label: 'Generator 1', prompt: '' },
+          getNodeIOConfig(NODE_TYPES.IMAGE_GENERATOR)
+        ),
+        createNode(
+          'node-3',
+          NODE_TYPES.IMAGE_GENERATOR,
+          { x: 250, y: 300 },
+          { label: 'Generator 2', prompt: '' },
+          getNodeIOConfig(NODE_TYPES.IMAGE_GENERATOR)
+        )
       ]
 
-      // Edge de ejemplo
+      // Mock edge
       this.edges = [
-        {
-          id: 'edge-1',
-          source: 'node-1',
-          target: 'node-2'
-        }
+        createEdge('edge-1', 'node-1', 'node-2')
       ]
     }
   }

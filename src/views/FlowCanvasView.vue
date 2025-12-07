@@ -2,12 +2,15 @@
   <div class="flow-canvas-container">
     <!-- Sidebar para drag & drop de nodos -->
     <aside class="sidebar">
-      <h3>Nodos</h3>
-      <div class="node-item" draggable="true" @dragstart="onDragStart($event, 'image')">
-        📷 Imagen
-      </div>
-      <div class="node-item" draggable="true" @dragstart="onDragStart($event, 'generator')">
-        ✨ Generador
+      <h3>Nodes</h3>
+      <div
+        v-for="nodeDef in availableNodes"
+        :key="nodeDef.type"
+        class="node-item"
+        draggable="true"
+        @dragstart="onDragStart($event, nodeDef.type)"
+      >
+        {{ getNodeIcon(nodeDef.type) }} {{ nodeDef.label }}
       </div>
     </aside>
 
@@ -16,6 +19,7 @@
       <VueFlow
         v-model:nodes="nodes"
         v-model:edges="edges"
+        :node-types="nodeTypes"
         :default-viewport="{ zoom: 1 }"
         :min-zoom="0.2"
         :max-zoom="4"
@@ -36,9 +40,30 @@ import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { useFlowStore } from '@/stores/flow'
+import { validateConnection } from '@/lib/connection'
+import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
+import nodeRegistry from '@/lib/node-registry'
 import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()
+
+// Create node types mapping from registry
+const nodeTypes = {}
+nodeRegistry.listNodes().forEach(nodeDef => {
+  nodeTypes[nodeDef.type] = nodeDef.component
+})
+
+// Get available nodes from registry
+const availableNodes = computed(() => nodeRegistry.listNodes())
+
+// Get icon for node type
+function getNodeIcon(type) {
+  const icons = {
+    [NODE_TYPES.IMAGE]: '📷',
+    [NODE_TYPES.IMAGE_GENERATOR]: '✨'
+  }
+  return icons[type] || '⚙️'
+}
 
 // Inicializar nodos mock al montar
 onMounted(() => {
@@ -70,62 +95,74 @@ function onDrop(event) {
   const canvasWrapper = event.currentTarget
   const rect = canvasWrapper.getBoundingClientRect()
 
-  // Calcular posición relativa al canvas
+  // Calculate position relative to canvas
   const position = {
-    x: event.clientX - rect.left - 75, // Centrar el nodo (ancho ~150px)
-    y: event.clientY - rect.top - 50   // Centrar el nodo (alto ~100px)
+    x: event.clientX - rect.left - 75, // Center node (width ~150px)
+    y: event.clientY - rect.top - 50   // Center node (height ~100px)
   }
 
-  // Crear nuevo nodo
-  const newNode = {
-    id: `node_${Date.now()}`,
-    type: draggedNodeType,
-    position,
-    data: {
-      label: draggedNodeType === 'image' ? 'Nueva Imagen' : 'Nuevo Generador',
-      ...(draggedNodeType === 'generator' && { prompt: '' })
-    }
+  // Get node definition from registry
+  const nodeDef = nodeRegistry.getNodeDef(draggedNodeType)
+  if (!nodeDef) {
+    console.error(`Node type ${draggedNodeType} not found in registry`)
+    draggedNodeType = null
+    return
   }
+
+  // Get IO configuration for this node type
+  const ioConfig = getNodeIOConfig(draggedNodeType)
+
+  // Create node data
+  const data = {
+    label: `New ${nodeDef.label}`
+  }
+
+  // Add prompt field for generator nodes
+  if (draggedNodeType === NODE_TYPES.IMAGE_GENERATOR) {
+    data.prompt = ''
+  }
+
+  // Create new node using the schema
+  const newNode = createNode(
+    `node_${Date.now()}`,
+    draggedNodeType,
+    position,
+    data,
+    ioConfig
+  )
 
   flowStore.addNode(newNode)
   draggedNodeType = null
 }
 
-// Conectar nodos
+// Connect nodes
 function onConnect(connection) {
-  // Validar conexión
+  // Get nodes
   const sourceNode = flowStore.getNodeById(connection.source)
   const targetNode = flowStore.getNodeById(connection.target)
 
-  if (!sourceNode || !targetNode) {
-    flowStore.setError('Nodos no encontrados')
-    return
-  }
-
-  // Evitar auto-conexiones
-  if (connection.source === connection.target) {
-    flowStore.setError('No puedes conectar un nodo consigo mismo')
-    return
-  }
-
-  // Evitar conexiones duplicadas
-  const isDuplicate = flowStore.edges.some(
-    edge => edge.source === connection.source && edge.target === connection.target
+  // Validate connection using the validation system
+  const validation = validateConnection(
+    connection,
+    sourceNode,
+    targetNode,
+    flowStore.edges
   )
 
-  if (isDuplicate) {
-    flowStore.setError('Esta conexión ya existe')
+  if (!validation.valid) {
+    flowStore.setError(validation.reason)
+    console.warn('Connection rejected:', validation.reason)
     return
   }
 
-  // Crear edge
-  const newEdge = {
-    id: `edge_${connection.source}_${connection.target}_${Date.now()}`,
-    source: connection.source,
-    target: connection.target,
-    sourceHandle: connection.sourceHandle,
-    targetHandle: connection.targetHandle
-  }
+  // Create edge using the schema
+  const newEdge = createEdge(
+    `edge_${connection.source}_${connection.target}_${Date.now()}`,
+    connection.source,
+    connection.target,
+    connection.sourceHandle,
+    connection.targetHandle
+  )
 
   flowStore.addEdge(newEdge)
   flowStore.clearError()
