@@ -429,12 +429,16 @@ async function handleGenerate() {
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid #eee;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-preview img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .image-placeholder {
@@ -486,6 +490,26 @@ async function handleGenerate() {
 .prompt-section textarea:focus {
   outline: none;
   border-color: #4CAF50;
+}
+
+.connected-prompt-info {
+  padding: 0.5rem;
+  background: #f0f7ff;
+  border-radius: 4px;
+  border: 1px solid #d0e5ff;
+}
+
+.prompt-preview {
+  font-size: 0.85rem;
+  color: #333;
+  margin-top: 0.25rem;
+  padding: 0.25rem;
+  background: white;
+  border-radius: 3px;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .generate-section {
