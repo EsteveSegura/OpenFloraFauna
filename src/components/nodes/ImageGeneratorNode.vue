@@ -349,7 +349,10 @@ async function handleGenerate() {
       lastOutputSrc: result.imageUrl,
       model: result.model,
       generationId: result.id,
-      params: {
+      // Keep existing model params - don't overwrite them
+      params: nodeData.value.params || {},
+      // Store generation metadata separately
+      generationMetadata: {
         inputImagesCount: inputImages.length,
         connectedNodesCount: connectedImages.value.length,
         usedInputImages: inputImages.length > 0,
