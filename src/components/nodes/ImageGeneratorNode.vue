@@ -80,7 +80,7 @@
     :type="type"
     :data="nodeData"
     :label="nodeData.label"
-    :inputs="['image']"
+    :inputs="['image', 'prompt']"
     :outputs="['image']"
     :loading="isGenerating"
     :error="nodeData.error"
@@ -112,8 +112,8 @@
         <p>{{ isGenerating ? 'Generating...' : 'No image generated' }}</p>
       </div>
 
-      <!-- Prompt input -->
-      <div class="prompt-section">
+      <!-- Prompt input (hidden if there's a connected prompt) -->
+      <div v-if="!connectedPrompt" class="prompt-section">
         <label for="prompt">Prompt:</label>
         <textarea
           id="prompt"
@@ -124,11 +124,17 @@
         ></textarea>
       </div>
 
+      <!-- Show connected prompt info -->
+      <div v-else class="connected-prompt-info">
+        <div class="section-label">📝 Using connected prompt</div>
+        <div class="prompt-preview">{{ connectedPrompt }}</div>
+      </div>
+
       <!-- Generate button -->
       <div class="generate-section">
         <button
           class="generate-button"
-          :disabled="isGenerating || !localPrompt.trim()"
+          :disabled="isGenerating || (!connectedPrompt && !localPrompt.trim())"
           @click="handleGenerate"
         >
           {{ isGenerating ? 'Generating...' : 'Generate Image' }}
@@ -211,6 +217,23 @@ const connectedImages = computed(() => {
   return images
 })
 
+// Get connected prompt from upstream prompt node
+const connectedPrompt = computed(() => {
+  const connections = flowStore.getNodeConnections(props.id)
+
+  for (const edge of connections.incoming) {
+    const sourceNode = flowStore.getNodeById(edge.source)
+    if (!sourceNode) continue
+
+    // Check if it's a prompt type node
+    if (sourceNode.type === 'prompt' && sourceNode.data.prompt) {
+      return sourceNode.data.prompt
+    }
+  }
+
+  return null
+})
+
 // Toolbar controls - Available models
 const availableModels = computed(() => replicateService.listModels())
 
@@ -276,14 +299,16 @@ function updatePrompt() {
 }
 
 async function handleGenerate() {
-  if (!localPrompt.value.trim() || isGenerating.value) return
+  // Use connected prompt if available, otherwise use local textarea prompt
+  const promptToUse = connectedPrompt.value || localPrompt.value
+  if (!promptToUse.trim() || isGenerating.value) return
 
   isGenerating.value = true
 
   try {
     // Update prompt before generating
     flowStore.updateNodeData(props.id, {
-      prompt: localPrompt.value
+      prompt: promptToUse
     })
 
     // Prepare input images from connected nodes
@@ -309,7 +334,7 @@ async function handleGenerate() {
 
     // Call Replicate API
     const result = await replicateService.generateImage({
-      prompt: localPrompt.value,
+      prompt: promptToUse,
       imageSrc: inputImages.length > 0 ? inputImages : null,
       model,
       params
@@ -320,7 +345,7 @@ async function handleGenerate() {
 
     // Update node with generated image
     flowStore.updateNodeData(props.id, {
-      prompt: localPrompt.value,
+      prompt: promptToUse,
       lastOutputSrc: result.imageUrl,
       model: result.model,
       generationId: result.id,

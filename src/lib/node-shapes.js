@@ -3,14 +3,16 @@
  */
 export const NODE_TYPES = {
   IMAGE: 'image',
-  IMAGE_GENERATOR: 'image-generator'
+  IMAGE_GENERATOR: 'image-generator',
+  PROMPT: 'prompt'
 }
 
 /**
  * Constants for port types
  */
 export const PORT_TYPES = {
-  IMAGE: 'image'
+  IMAGE: 'image',
+  PROMPT: 'prompt'
 }
 
 /**
@@ -130,8 +132,12 @@ export const NODE_IO_CONFIG = {
     outputs: [PORT_TYPES.IMAGE]
   },
   [NODE_TYPES.IMAGE_GENERATOR]: {
-    inputs: [PORT_TYPES.IMAGE],
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.IMAGE]
+  },
+  [NODE_TYPES.PROMPT]: {
+    inputs: [],
+    outputs: [PORT_TYPES.PROMPT]
   }
 }
 

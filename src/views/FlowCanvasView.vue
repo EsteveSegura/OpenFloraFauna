@@ -84,7 +84,8 @@ const availableNodes = computed(() => nodeRegistry.listNodes())
 function getNodeIcon(type) {
   const icons = {
     [NODE_TYPES.IMAGE]: '📷',
-    [NODE_TYPES.IMAGE_GENERATOR]: '✨'
+    [NODE_TYPES.IMAGE_GENERATOR]: '✨',
+    [NODE_TYPES.PROMPT]: '📝'
   }
   return icons[type] || '⚙️'
 }
@@ -142,6 +143,11 @@ function onDrop(event) {
     data.prompt = ''
     data.model = 'nano-banana-pro'
     data.params = replicateService.getModelDefaults('nano-banana-pro')
+  }
+
+  // Add prompt field for prompt nodes
+  if (draggedNodeType === NODE_TYPES.PROMPT) {
+    data.prompt = ''
   }
 
   // Create new node using the schema

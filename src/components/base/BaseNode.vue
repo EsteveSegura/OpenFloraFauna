@@ -278,4 +278,28 @@ function getPortColor(portType) {
   left: 20px;
   transform: translateY(-50%);
 }
+
+/* Handle Styles - Make handles larger and easier to click */
+:deep(.vue-flow__handle) {
+  width: 16px;
+  height: 16px;
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: crosshair;
+}
+
+:deep(.vue-flow__handle-connecting) {
+  width: 20px;
+  height: 20px;
+  animation: pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
+  }
+}
 </style>

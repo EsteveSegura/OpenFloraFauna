@@ -7,6 +7,7 @@ import nodeRegistry from './node-registry'
 import { NODE_TYPES, PORT_TYPES } from './node-shapes'
 import ImageNode from '@/components/nodes/ImageNode.vue'
 import ImageGeneratorNode from '@/components/nodes/ImageGeneratorNode.vue'
+import PromptNode from '@/components/nodes/PromptNode.vue'
 
 /**
  * Register all available node types
@@ -31,12 +32,26 @@ export function registerAllNodes() {
     type: NODE_TYPES.IMAGE_GENERATOR,
     label: 'Image Generator',
     description: 'Generate images using AI based on a text prompt',
-    inputs: [PORT_TYPES.IMAGE],
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.IMAGE],
     component: ImageGeneratorNode,
     config: {
       category: 'Generator',
       color: '#2196F3'
+    }
+  })
+
+  // Register Prompt Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.PROMPT,
+    label: 'Prompt',
+    description: 'Text prompt node - provide prompts for image generation',
+    inputs: [],
+    outputs: [PORT_TYPES.PROMPT],
+    component: PromptNode,
+    config: {
+      category: 'Input',
+      color: '#9C27B0'
     }
   })
 
@@ -65,7 +80,8 @@ export function getAvailableNodeTypes() {
 function getNodeIcon(type) {
   const icons = {
     [NODE_TYPES.IMAGE]: '📷',
-    [NODE_TYPES.IMAGE_GENERATOR]: '✨'
+    [NODE_TYPES.IMAGE_GENERATOR]: '✨',
+    [NODE_TYPES.PROMPT]: '📝'
   }
   return icons[type] || '⚙️'
 }
