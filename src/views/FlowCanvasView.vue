@@ -1,21 +1,25 @@
 <template>
   <div class="flow-canvas-container">
-    <!-- Sidebar para drag & drop de nodos -->
-    <aside class="sidebar">
-      <h3>Nodes</h3>
-      <div
-        v-for="nodeDef in availableNodes"
-        :key="nodeDef.type"
-        class="node-item"
-        draggable="true"
-        @dragstart="onDragStart($event, nodeDef.type)"
-      >
-        {{ getNodeIcon(nodeDef.type) }} {{ nodeDef.label }}
-      </div>
-    </aside>
-
     <!-- Canvas de VueFlow -->
     <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent>
+      <!-- Toggle button for nodes menu -->
+      <button class="nodes-menu-toggle" @click="isNodesMenuOpen = !isNodesMenuOpen" :title="isNodesMenuOpen ? 'Hide nodes menu' : 'Show nodes menu'">
+        {{ isNodesMenuOpen ? '✕' : '📦' }}
+      </button>
+
+      <!-- Floating Sidebar para drag & drop de nodos -->
+      <aside v-if="isNodesMenuOpen" class="sidebar">
+        <h3>Nodes</h3>
+        <div
+          v-for="nodeDef in availableNodes"
+          :key="nodeDef.type"
+          class="node-item"
+          draggable="true"
+          @dragstart="onDragStart($event, nodeDef.type)"
+        >
+          {{ getNodeIcon(nodeDef.type) }} {{ nodeDef.label }}
+        </div>
+      </aside>
       <!-- Toolbar -->
       <div class="toolbar">
         <button class="toolbar-button" @click="handleExport" title="Export flow to JSON">
@@ -70,6 +74,7 @@ import '@/styles/FlowCanvasView.css'
 const flowStore = useFlowStore()
 const { nodes, edges } = storeToRefs(flowStore)
 const fileInput = ref(null)
+const isNodesMenuOpen = ref(false)
 
 // Create node types mapping from registry
 const nodeTypes = {}
