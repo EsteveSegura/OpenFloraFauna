@@ -38,16 +38,15 @@
       </div>
 
       <VueFlow
-        v-model:nodes="nodes"
-        v-model:edges="edges"
+        v-model:nodes="flowStore.nodes"
+        v-model:edges="flowStore.edges"
         :node-types="nodeTypes"
+        :is-valid-connection="isValidConnection"
         :default-viewport="{ zoom: 1 }"
         :min-zoom="0.2"
         :max-zoom="4"
         :delete-key-code="['Delete', 'Backspace']"
         :multi-selection-key-code="['Meta', 'Control']"
-        @connect="onConnect"
-        @node-drag-stop="onNodeDragStop"
       >
         <Background pattern-color="#aaa" :gap="16" />
         <Controls />
@@ -57,9 +56,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { VueFlow } from '@vue-flow/core'
+import { computed, onMounted, ref, markRaw } from 'vue'
+import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { useFlowStore } from '@/stores/flow'
@@ -71,14 +69,24 @@ import replicateService from '@/services/replicate'
 import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()
-const { nodes, edges } = storeToRefs(flowStore)
+
 const fileInput = ref(null)
 const isNodesMenuOpen = ref(false)
+
+// VueFlow composable
+const { findNode, onConnect, addEdges } = useVueFlow()
+
+// Register connection handler - use addEdges directly
+onConnect((params) => {
+  // Validation already done by isValidConnection
+  addEdges([params])
+  flowStore.clearError()
+})
 
 // Create node types mapping from registry
 const nodeTypes = {}
 nodeRegistry.listNodes().forEach(nodeDef => {
-  nodeTypes[nodeDef.type] = nodeDef.component
+  nodeTypes[nodeDef.type] = markRaw(nodeDef.component)
 })
 
 // Get available nodes from registry
@@ -93,11 +101,6 @@ function getNodeIcon(type) {
     [NODE_TYPES.DIFF]: '🔍'
   }
   return icons[type] || '⚙️'
-}
-
-// Guardar posición cuando se termina de arrastrar un nodo
-function onNodeDragStop(event) {
-  flowStore.updateNodePosition(event.node.id, event.node.position)
 }
 
 // Drag & Drop
@@ -157,17 +160,18 @@ function onDrop(event) {
     ioConfig
   )
 
-  flowStore.addNode(newNode)
+  // Mutate store array directly - preserves component instances
+  flowStore.nodes.push(newNode)
   draggedNodeType = null
 }
 
-// Connect nodes
-function onConnect(connection) {
-  // Get nodes
-  const sourceNode = flowStore.getNodeById(connection.source)
-  const targetNode = flowStore.getNodeById(connection.target)
+// Validate connection before allowing it (visual feedback)
+function isValidConnection(connection) {
+  const sourceNode = flowStore.nodes.find(n => n.id === connection.source)
+  const targetNode = flowStore.nodes.find(n => n.id === connection.target)
 
-  // Validate connection using the validation system
+  if (!sourceNode || !targetNode) return false
+
   const validation = validateConnection(
     connection,
     sourceNode,
@@ -175,23 +179,7 @@ function onConnect(connection) {
     flowStore.edges
   )
 
-  if (!validation.valid) {
-    flowStore.setError(validation.reason)
-    console.warn('Connection rejected:', validation.reason)
-    return
-  }
-
-  // Create edge using the schema
-  const newEdge = createEdge(
-    `edge_${connection.source}_${connection.target}_${Date.now()}`,
-    connection.source,
-    connection.target,
-    connection.sourceHandle,
-    connection.targetHandle
-  )
-
-  flowStore.addEdge(newEdge)
-  flowStore.clearError()
+  return validation.valid
 }
 
 // Export flow to JSON file
@@ -216,7 +204,7 @@ async function onFileSelected(event) {
   if (!file) return
 
   try {
-    const result = await loadFlowFromFile(file, flowStore)
+    const result = await loadFlowFromFile(file, flowStore, { addEdges })
 
     if (result.success) {
       console.log('Flow imported successfully')

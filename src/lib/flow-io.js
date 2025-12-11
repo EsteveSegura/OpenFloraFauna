@@ -102,9 +102,10 @@ export function validateFlow(flowData) {
  * Import flow from JSON data
  * @param {Object} flowData - Imported flow data
  * @param {Object} flowStore - Pinia flow store instance
- * @returns {Object} { success: boolean, error?: string }
+ * @param {Object} vueFlowHelpers - VueFlow composable helpers (addEdges)
+ * @returns {Promise<Object>} { success: boolean, error?: string }
  */
-export function importFlow(flowData, flowStore) {
+export async function importFlow(flowData, flowStore, vueFlowHelpers = {}) {
   // Validate flow structure
   const validation = validateFlow(flowData)
 
@@ -117,31 +118,40 @@ export function importFlow(flowData, flowStore) {
   }
 
   try {
-    // Clear current flow
-    flowStore.nodes = []
-    flowStore.edges = []
+    // Clear current flow first (maintains array references)
+    flowStore.nodes.splice(0, flowStore.nodes.length)
+    flowStore.edges.splice(0, flowStore.edges.length)
 
-    // Import nodes
-    flowData.nodes.forEach(node => {
-      flowStore.addNode({
-        id: node.id,
-        type: node.type,
-        position: node.position,
-        data: node.data,
-        io: node.io
-      })
-    })
+    // Import nodes (push to maintain reference)
+    const importedNodes = flowData.nodes.map(node => ({
+      id: node.id,
+      type: node.type,
+      position: node.position,
+      data: node.data,
+      io: node.io
+    }))
+    flowStore.nodes.push(...importedNodes)
 
-    // Import edges
-    flowData.edges.forEach(edge => {
-      flowStore.addEdge({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle
-      })
-    })
+    // Wait for Vue to process nodes before adding edges
+    // This is critical for VueFlow to recognize node references
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Import edges using VueFlow's addEdges if available, otherwise push directly
+    const importedEdges = flowData.edges.map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: edge.sourceHandle,
+      targetHandle: edge.targetHandle
+    }))
+
+    if (vueFlowHelpers.addEdges) {
+      // Use VueFlow's addEdges for proper internal state management
+      vueFlowHelpers.addEdges(importedEdges)
+    } else {
+      // Fallback to direct push
+      flowStore.edges.push(...importedEdges)
+    }
 
     console.log('Flow imported successfully:', {
       nodes: flowData.nodes.length,
@@ -185,9 +195,10 @@ export function downloadFlow(flowStore, filename) {
  * Load flow from file
  * @param {File} file - JSON file to import
  * @param {Object} flowStore - Pinia flow store instance
+ * @param {Object} vueFlowHelpers - VueFlow composable helpers (addEdges)
  * @returns {Promise<Object>} { success: boolean, error?: string }
  */
-export function loadFlowFromFile(file, flowStore) {
+export function loadFlowFromFile(file, flowStore, vueFlowHelpers = {}) {
   return new Promise((resolve) => {
     if (!file) {
       resolve({ success: false, error: 'No file provided' })
@@ -201,10 +212,10 @@ export function loadFlowFromFile(file, flowStore) {
 
     const reader = new FileReader()
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const flowData = JSON.parse(event.target.result)
-        const result = importFlow(flowData, flowStore)
+        const result = await importFlow(flowData, flowStore, vueFlowHelpers)
         resolve(result)
       } catch (error) {
         console.error('Error parsing JSON:', error)

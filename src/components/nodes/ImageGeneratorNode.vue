@@ -1,6 +1,7 @@
 <template>
-  <!-- Node Toolbar -->
-  <NodeToolbar :is-visible="selected" :position="Position.Top" :offset="10">
+  <div>
+    <!-- Node Toolbar -->
+    <NodeToolbar :is-visible="selected" :position="Position.Top" :offset="10">
     <div class="node-toolbar-content">
       <!-- Model Selector -->
       <div class="toolbar-control">
@@ -145,10 +146,12 @@
       </div>
     </div>
   </BaseNode>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useNode, useHandleConnections, useNodesData, useVueFlow } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
 import { NodeToolbar } from '@vue-flow/node-toolbar'
 import { Position } from '@vue-flow/core'
@@ -178,55 +181,41 @@ const flowStore = useFlowStore()
 const localPrompt = ref(props.data.prompt || '')
 const isGenerating = ref(false)
 
-// Get the current node data directly from store for reactivity
-const nodeData = computed(() => {
-  const node = flowStore.getNodeById(props.id)
-  const data = node ? node.data : props.data
+// VueFlow composables
+const { node } = useNode()
+const { updateNodeData } = useVueFlow()
 
-  // Debug logging for preview image
-  if (data.lastOutputSrc && data.lastOutputSrc !== props.data.lastOutputSrc) {
-    console.log('[ImageGeneratorNode] nodeData updated with lastOutputSrc:', data.lastOutputSrc.substring(0, 60) + '...')
-  }
-
-  return data
-})
+// Get the current node data from useNode composable
+const nodeData = computed(() => node.data)
 
 // Get connected images from upstream nodes
+// Using flowStore directly for reactivity
 const connectedImages = computed(() => {
-  const connections = flowStore.getNodeConnections(props.id)
-  const images = []
+  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
-  connections.incoming.forEach(edge => {
-    const sourceNode = flowStore.getNodeById(edge.source)
-    if (sourceNode && sourceNode.data) {
-      // Check if source has image data
-      if (sourceNode.data.src) {
-        images.push({
-          src: sourceNode.data.src,
-          name: sourceNode.data.name
-        })
-      } else if (sourceNode.data.lastOutputSrc) {
-        images.push({
-          src: sourceNode.data.lastOutputSrc,
-          name: sourceNode.data.label
-        })
+  return incomingEdges
+    .map(edge => {
+      const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
+      if (!sourceNode || !sourceNode.data) return null
+
+      const imageSrc = sourceNode.data.src || sourceNode.data.lastOutputSrc
+      if (!imageSrc) return null
+
+      return {
+        src: imageSrc,
+        name: sourceNode.data.name || sourceNode.data.label
       }
-    }
-  })
-
-  return images
+    })
+    .filter(img => img !== null)
 })
 
 // Get connected prompt from upstream prompt node
 const connectedPrompt = computed(() => {
-  const connections = flowStore.getNodeConnections(props.id)
+  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
-  for (const edge of connections.incoming) {
-    const sourceNode = flowStore.getNodeById(edge.source)
-    if (!sourceNode) continue
-
-    // Check if it's a prompt type node
-    if (sourceNode.type === 'prompt' && sourceNode.data.prompt) {
+  for (const edge of incomingEdges) {
+    const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
+    if (sourceNode && sourceNode.type === 'prompt' && sourceNode.data?.prompt) {
       return sourceNode.data.prompt
     }
   }
@@ -265,7 +254,7 @@ function onModelChange(event) {
   const newModel = event.target.value
   const defaults = replicateService.getModelDefaults(newModel)
 
-  flowStore.updateNodeData(props.id, {
+  updateNodeData(props.id, {
     model: newModel,
     params: defaults
   })
@@ -275,7 +264,7 @@ function onModelChange(event) {
 function onParamChange(key, value) {
   const currentParams = nodeData.value.params || {}
 
-  flowStore.updateNodeData(props.id, {
+  updateNodeData(props.id, {
     params: {
       ...currentParams,
       [key]: value
@@ -292,7 +281,7 @@ watch(() => nodeData.value.prompt, (newPrompt) => {
 
 function updatePrompt() {
   if (localPrompt.value !== nodeData.value.prompt) {
-    flowStore.updateNodeData(props.id, {
+    updateNodeData(props.id, {
       prompt: localPrompt.value
     })
   }
@@ -307,7 +296,7 @@ async function handleGenerate() {
 
   try {
     // Update prompt before generating
-    flowStore.updateNodeData(props.id, {
+    updateNodeData(props.id, {
       prompt: promptToUse
     })
 
@@ -323,14 +312,9 @@ async function handleGenerate() {
                src.startsWith('data:')
       })
 
-    console.log('Input images for generation:', inputImages.length, 'images')
-
     // Get model and params from node data
     const model = nodeData.value.model || 'nano-banana-pro'
     const params = nodeData.value.params || {}
-
-    console.log('Using model:', model)
-    console.log('With params:', params)
 
     // Call Replicate API
     const result = await replicateService.generateImage({
@@ -340,11 +324,8 @@ async function handleGenerate() {
       params
     })
 
-    console.log('Generation result:', result)
-    console.log('Image URL:', result.imageUrl)
-
     // Update node with generated image
-    flowStore.updateNodeData(props.id, {
+    updateNodeData(props.id, {
       prompt: promptToUse,
       lastOutputSrc: result.imageUrl,
       model: result.model,
@@ -359,19 +340,17 @@ async function handleGenerate() {
         isMock: result.isMock || false
       }
     })
-
-    console.log('Updated node data:', flowStore.getNodeById(props.id).data)
   } catch (error) {
     console.error('Error generating image:', error)
 
     // Show error to user
-    flowStore.updateNodeData(props.id, {
+    updateNodeData(props.id, {
       error: error.message || 'Failed to generate image'
     })
 
     // Clear error after 5 seconds
     setTimeout(() => {
-      flowStore.updateNodeData(props.id, {
+      updateNodeData(props.id, {
         error: null
       })
     }, 5000)

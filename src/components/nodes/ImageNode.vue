@@ -47,7 +47,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useFlowStore } from '@/stores/flow'
+import { useNode, useVueFlow } from '@vue-flow/core'
 import BaseNode from '@/components/base/BaseNode.vue'
 
 const props = defineProps({
@@ -69,14 +69,14 @@ const props = defineProps({
   }
 })
 
-const flowStore = useFlowStore()
 const isDragging = ref(false)
 
-// Get the current node data directly from store for reactivity
-const nodeData = computed(() => {
-  const node = flowStore.getNodeById(props.id)
-  return node ? node.data : props.data
-})
+// VueFlow composables
+const { node } = useNode()
+const { updateNodeData } = useVueFlow()
+
+// Get the current node data from useNode composable
+const nodeData = computed(() => node.data)
 
 function handleUpload() {
   const input = document.createElement('input')
@@ -106,7 +106,7 @@ function handleDrop(e) {
 function processFile(file) {
   const reader = new FileReader()
   reader.onload = (event) => {
-    flowStore.updateNodeData(props.id, {
+    updateNodeData(props.id, {
       src: event.target.result,
       name: file.name
     })

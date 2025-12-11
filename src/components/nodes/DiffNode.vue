@@ -40,6 +40,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useNode } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
 
@@ -54,32 +55,33 @@ const flowStore = useFlowStore()
 const diffCanvas = ref(null)
 const diffSize = ref('')
 
-const nodeData = computed(() => {
-  const node = flowStore.getNodeById(props.id)
-  return node ? node.data : props.data
-})
+// VueFlow composables
+const { node } = useNode()
+
+// Get the current node data from useNode composable
+const nodeData = computed(() => node.data)
 
 // Get connected images from incoming edges
+// Using flowStore directly for reactivity
 const connectedImages = computed(() => {
-  const connections = flowStore.getNodeConnections(props.id)
-  const images = []
+  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
-  for (const edge of connections.incoming) {
-    const sourceNode = flowStore.getNodeById(edge.source)
-    if (sourceNode) {
+  return incomingEdges
+    .map(edge => {
+      const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
+      if (!sourceNode) return null
+
       // Get image from source node
-      const imageSrc = sourceNode.data.src || sourceNode.data.lastOutputSrc
-      if (imageSrc) {
-        images.push({
-          src: imageSrc,
-          handle: edge.targetHandle,
-          nodeId: edge.source
-        })
-      }
-    }
-  }
+      const imageSrc = sourceNode.data?.src || sourceNode.data?.lastOutputSrc
+      if (!imageSrc) return null
 
-  return images
+      return {
+        src: imageSrc,
+        handle: edge.targetHandle,
+        nodeId: edge.source
+      }
+    })
+    .filter(img => img !== null)
 })
 
 const hasImage1 = computed(() => {

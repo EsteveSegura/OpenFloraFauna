@@ -1,80 +1,41 @@
 import { defineStore } from 'pinia'
-import { createNode, createEdge, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
-import replicateService from '@/services/replicate'
+import { ref } from 'vue'
 
-export const useFlowStore = defineStore('flow', {
-  state: () => ({
-    nodes: [],
-    edges: [],
-    isLoading: false,
-    error: null
-  }),
+export const useFlowStore = defineStore('flow', () => {
+  // State
+  const nodes = ref([])
+  const edges = ref([])
+  const isLoading = ref(false)
+  const error = ref(null)
 
-  getters: {
-    getNodeById: (state) => (nodeId) => {
-      return state.nodes.find(node => node.id === nodeId)
-    },
+  // Actions
+  const reset = () => {
+    nodes.value = []
+    edges.value = []
+    error.value = null
+    isLoading.value = false
+  }
 
-    getNodeConnections: (state) => (nodeId) => {
-      return {
-        incoming: state.edges.filter(edge => edge.target === nodeId),
-        outgoing: state.edges.filter(edge => edge.source === nodeId)
-      }
-    }
-  },
+  const setLoading = (loading) => {
+    isLoading.value = loading
+  }
 
-  actions: {
-    addNode(node) {
-      this.nodes.push(node)
-    },
+  const setError = (err) => {
+    error.value = err
+  }
 
-    updateNodeData(nodeId, data) {
-      const nodeIndex = this.nodes.findIndex(node => node.id === nodeId)
-      if (nodeIndex !== -1) {
-        // Replace the entire node object to trigger reactivity
-        this.nodes[nodeIndex] = {
-          ...this.nodes[nodeIndex],
-          data: { ...this.nodes[nodeIndex].data, ...data }
-        }
-      }
-    },
+  const clearError = () => {
+    error.value = null
+  }
 
-    removeNode(nodeId) {
-      this.nodes = this.nodes.filter(node => node.id !== nodeId)
-      this.edges = this.edges.filter(
-        edge => edge.source !== nodeId && edge.target !== nodeId
-      )
-    },
-
-    addEdge(edge) {
-      this.edges.push(edge)
-    },
-
-    removeEdge(edgeId) {
-      this.edges = this.edges.filter(edge => edge.id !== edgeId)
-    },
-
-    setLoading(isLoading) {
-      this.isLoading = isLoading
-    },
-
-    setError(error) {
-      this.error = error
-    },
-
-    clearError() {
-      this.error = null
-    },
-
-    updateNodePosition(nodeId, position) {
-      const nodeIndex = this.nodes.findIndex(node => node.id === nodeId)
-      if (nodeIndex !== -1) {
-        // Replace the entire node object to trigger reactivity
-        this.nodes[nodeIndex] = {
-          ...this.nodes[nodeIndex],
-          position
-        }
-      }
-    }
+  return {
+    nodes,
+    edges,
+    isLoading,
+    error,
+    reset,
+    setLoading,
+    setError,
+    clearError
   }
 })

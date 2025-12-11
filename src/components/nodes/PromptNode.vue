@@ -26,8 +26,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useFlowStore } from '@/stores/flow'
+import { ref, computed, watch } from 'vue'
+import { useNode, useVueFlow } from '@vue-flow/core'
 import BaseNode from '@/components/base/BaseNode.vue'
 
 const props = defineProps({
@@ -49,18 +49,25 @@ const props = defineProps({
   }
 })
 
-const flowStore = useFlowStore()
 const localPrompt = ref(props.data.prompt || '')
 
-// Get the current node data directly from store for reactivity
-const nodeData = computed(() => {
-  const node = flowStore.getNodeById(props.id)
-  return node ? node.data : props.data
+// VueFlow composables
+const { node } = useNode()
+const { updateNodeData } = useVueFlow()
+
+// Get the current node data from useNode composable
+const nodeData = computed(() => node.data)
+
+// Watch for external changes to prompt
+watch(() => nodeData.value.prompt, (newPrompt) => {
+  if (newPrompt !== localPrompt.value) {
+    localPrompt.value = newPrompt
+  }
 })
 
 function updatePrompt() {
   if (localPrompt.value !== nodeData.value.prompt) {
-    flowStore.updateNodeData(props.id, {
+    updateNodeData(props.id, {
       prompt: localPrompt.value
     })
   }

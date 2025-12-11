@@ -102,8 +102,19 @@ const props = defineProps({
 
 const flowStore = useFlowStore()
 
+// Helper function to update node data
+const updateNodeData = (nodeId, data) => {
+  const nodeIndex = flowStore.nodes.findIndex(node => node.id === nodeId)
+  if (nodeIndex !== -1) {
+    flowStore.nodes[nodeIndex] = {
+      ...flowStore.nodes[nodeIndex],
+      data: { ...flowStore.nodes[nodeIndex].data, ...data }
+    }
+  }
+}
+
 // Get the current node
-const node = computed(() => flowStore.getNodeById(props.nodeId))
+const node = computed(() => flowStore.nodes.find(n => n.id === props.nodeId))
 
 // Only show navbar for image-generator nodes
 const shouldShow = computed(() => {
@@ -148,7 +159,7 @@ function onModelChange(event) {
   const defaults = replicateService.getModelDefaults(newModel)
 
   // Update node with new model and reset params to defaults
-  flowStore.updateNodeData(props.nodeId, {
+  updateNodeData(props.nodeId, {
     model: newModel,
     params: defaults
   })
@@ -158,7 +169,7 @@ function onModelChange(event) {
 function onParamChange(key, value) {
   const currentParams = node.value?.data?.params || {}
 
-  flowStore.updateNodeData(props.nodeId, {
+  updateNodeData(props.nodeId, {
     params: {
       ...currentParams,
       [key]: value
