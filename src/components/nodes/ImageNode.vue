@@ -120,15 +120,17 @@ function processFile(file) {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 200px;
 }
 
 .image-preview {
-  width: 100%;
-  height: 120px;
+  width: 200px;
+  height: 150px;
   border-radius: 4px;
   overflow: hidden;
   border: 2px solid #eee;
   transition: border-color 0.2s;
+  flex-shrink: 0;
 }
 
 .image-preview.dragging {
@@ -139,12 +141,13 @@ function processFile(file) {
 .image-preview img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #fff;
 }
 
 .image-placeholder {
-  width: 100%;
-  height: 120px;
+  width: 200px;
+  height: 150px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -154,6 +157,7 @@ function processFile(file) {
   border-radius: 4px;
   color: #999;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .image-placeholder.dragging {
