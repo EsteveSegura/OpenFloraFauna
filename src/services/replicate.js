@@ -5,6 +5,7 @@
 
 import NANO_BANANA_PRO from './models/nano-banana-pro'
 import SEEDREAM_4 from './models/seedream-4'
+import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
 
 /**
  * Registry of available models
@@ -12,6 +13,7 @@ import SEEDREAM_4 from './models/seedream-4'
 const MODELS = {
   'nano-banana-pro': NANO_BANANA_PRO,
   'seedream-4': SEEDREAM_4,
+  'lang-segment-anything': LANG_SEGMENT_ANYTHING,
   'default': NANO_BANANA_PRO
 }
 
@@ -154,10 +156,10 @@ class ReplicateService {
     })
 
     console.log('  API input payload:', {
-      prompt: input.prompt.substring(0, 50) + '...',
-      image_input_count: input.image_input.length,
-      resolution: input.resolution,
-      output_format: input.output_format
+      prompt: input.prompt || input.text_prompt?.substring(0, 50) + '...',
+      image_input_count: input.image_input?.length || (input.image ? 1 : 0),
+      ...(input.resolution && { resolution: input.resolution }),
+      ...(input.output_format && { output_format: input.output_format })
     })
 
     // Check for API token
@@ -169,7 +171,7 @@ class ReplicateService {
 
     // Make API call
     try {
-      const response = await this._callApi(model.endpoint, input, token)
+      const response = await this._callApi(model.endpoint, input, token, model)
       return model.parseResponse(response)
     } catch (error) {
       throw this._handleError(error)
@@ -181,14 +183,20 @@ class ReplicateService {
    * @param {string} endpoint - API endpoint
    * @param {Object} input - Input payload
    * @param {string} token - API token
+   * @param {Object} model - Model configuration
    * @returns {Promise<Object>} API response
    * @private
    */
-  async _callApi(endpoint, input, token) {
+  async _callApi(endpoint, input, token, model) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
 
     try {
+      // Build request body - some models need version in body
+      const requestBody = model.useVersionInBody
+        ? { version: model.version, input }
+        : { input }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -196,7 +204,7 @@ class ReplicateService {
           'Content-Type': 'application/json',
           'Prefer': 'wait' // Wait for synchronous response
         },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal
       })
 
