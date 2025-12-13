@@ -125,6 +125,7 @@
           placeholder="Describe the image you want to generate..."
           :rows="3"
           @blur="updatePrompt"
+          @mousedown.stop
         />
       </div>
 

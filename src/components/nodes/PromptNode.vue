@@ -15,6 +15,7 @@
         placeholder="Enter your prompt here..."
         :rows="5"
         @blur="updatePrompt"
+        @mousedown.stop
       />
 
       <div v-if="nodeData.prompt" class="character-count">

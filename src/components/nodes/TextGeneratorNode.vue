@@ -98,6 +98,7 @@
             v-model="localPrompt"
             placeholder="Enter your prompt here..."
             :rows="4"
+            @mousedown.stop
           />
         </div>
 
@@ -117,7 +118,7 @@
         </div>
 
         <!-- Generated text output -->
-        <div v-if="nodeData.generatedText" class="output-section">
+        <div v-if="nodeData.generatedText" class="output-section" @mousedown.stop>
           <div class="section-label">Generated Text:</div>
           <div class="text-output">{{ nodeData.generatedText }}</div>
         </div>
@@ -408,6 +409,8 @@ async function handleGenerate() {
   white-space: pre-wrap;
   max-height: 200px;
   overflow-y: auto;
+  user-select: text;
+  cursor: text;
 }
 
 .status-info {
