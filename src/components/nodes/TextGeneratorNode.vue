@@ -135,6 +135,9 @@ import { NodeToolbar } from '@vue-flow/node-toolbar'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
 import replicateService from '@/services/replicate'
+import { getEdgePortType } from '@/lib/connection'
+import { PORT_TYPES } from '@/lib/node-shapes'
+import nodeRegistry from '@/lib/node-registry'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -161,12 +164,16 @@ const controls = computed(() => {
   return uiSchema ? uiSchema.controls : []
 })
 
-// Get connected images from incoming edges
+// Get connected images from incoming edges (uses PORT_TYPE)
 const connectedImages = computed(() => {
   const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
   return incomingEdges
     .map(edge => {
+      // Check if this edge connects an IMAGE port
+      const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
+      if (portType !== PORT_TYPES.IMAGE) return null
+
       const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
       if (!sourceNode || !sourceNode.data) return null
 
@@ -181,13 +188,17 @@ const connectedImages = computed(() => {
     .filter(img => img !== null)
 })
 
-// Get connected prompt from incoming edges
+// Get connected prompt from incoming edges (uses PORT_TYPE)
 const connectedPrompt = computed(() => {
   const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
   for (const edge of incomingEdges) {
+    // Check if this edge connects a PROMPT port
+    const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
+    if (portType !== PORT_TYPES.PROMPT) continue
+
     const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-    if (sourceNode && sourceNode.type === 'prompt' && sourceNode.data?.prompt) {
+    if (sourceNode && sourceNode.data?.prompt) {
       return sourceNode.data.prompt
     }
   }

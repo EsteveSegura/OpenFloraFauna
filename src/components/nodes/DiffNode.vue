@@ -43,6 +43,9 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useNode } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
+import { getEdgePortType } from '@/lib/connection'
+import { PORT_TYPES } from '@/lib/node-shapes'
+import nodeRegistry from '@/lib/node-registry'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -62,12 +65,16 @@ const { node } = useNode()
 const nodeData = computed(() => node.data)
 
 // Get connected images from incoming edges
-// Using flowStore directly for reactivity
+// Using flowStore directly for reactivity with PORT_TYPE validation
 const connectedImages = computed(() => {
   const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
   return incomingEdges
     .map(edge => {
+      // Validate port type
+      const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
+      if (portType !== PORT_TYPES.IMAGE) return null
+
       const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
       if (!sourceNode) return null
 

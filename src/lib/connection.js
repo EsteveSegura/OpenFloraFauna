@@ -2,6 +2,36 @@ import { PORT_TYPES } from './node-shapes'
 import nodeRegistry from './node-registry'
 
 /**
+ * Get the PORT_TYPE for an edge connection
+ * @param {Object} edge - Edge object with sourceHandle/targetHandle
+ * @param {Array} nodes - Array of all nodes
+ * @param {Object} registry - Node registry instance
+ * @param {boolean} isSource - True for source port, false for target port
+ * @returns {string|null} PORT_TYPE ('image', 'prompt') or null
+ */
+export function getEdgePortType(edge, nodes, registry, isSource = true) {
+  const nodeId = isSource ? edge.source : edge.target
+  const handleId = isSource ? edge.sourceHandle : edge.targetHandle
+
+  if (!nodeId || !handleId) return null
+
+  const node = nodes.find(n => n.id === nodeId)
+  if (!node) return null
+
+  const nodeDef = registry.getNodeDef(node.type)
+  if (!nodeDef) return null
+
+  // Parse handle index (e.g., "output-0" -> 0)
+  const handleIndex = parseInt(handleId.split('-')[1])
+  if (isNaN(handleIndex)) return null
+
+  // Get port types array
+  const portTypes = isSource ? nodeDef.outputs : nodeDef.inputs
+
+  return portTypes[handleIndex] || null
+}
+
+/**
  * Validates if two port types are compatible to connect
  * @param {string} sourcePortType - Output port type
  * @param {string} targetPortType - Input port type
