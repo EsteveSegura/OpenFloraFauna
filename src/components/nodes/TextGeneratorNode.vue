@@ -90,8 +90,8 @@
           <div class="prompt-preview">{{ connectedPrompt }}</div>
         </div>
 
-        <!-- Prompt input -->
-        <div class="prompt-section">
+        <!-- Prompt input (hidden if there's a connected prompt) -->
+        <div v-if="!connectedPrompt" class="prompt-section">
           <BaseLabel for="prompt-input">Prompt:</BaseLabel>
           <BaseTextarea
             id="prompt-input"
