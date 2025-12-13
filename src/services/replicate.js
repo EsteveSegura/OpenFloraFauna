@@ -6,6 +6,7 @@
 import NANO_BANANA_PRO from './models/nano-banana-pro'
 import SEEDREAM_4 from './models/seedream-4'
 import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
+import GPT_IMAGE_1 from './models/gpt-image-1'
 
 /**
  * Registry of available models
@@ -14,6 +15,7 @@ const MODELS = {
   'nano-banana-pro': NANO_BANANA_PRO,
   'seedream-4': SEEDREAM_4,
   'lang-segment-anything': LANG_SEGMENT_ANYTHING,
+  'gpt-image-1': GPT_IMAGE_1,
   'default': NANO_BANANA_PRO
 }
 
