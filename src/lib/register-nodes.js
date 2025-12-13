@@ -9,6 +9,7 @@ import ImageNode from '@/components/nodes/ImageNode.vue'
 import ImageGeneratorNode from '@/components/nodes/ImageGeneratorNode.vue'
 import PromptNode from '@/components/nodes/PromptNode.vue'
 import DiffNode from '@/components/nodes/DiffNode.vue'
+import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
 
 /**
  * Register all available node types
@@ -67,6 +68,20 @@ export function registerAllNodes() {
     config: {
       category: 'Processing',
       color: '#FF9800'
+    }
+  })
+
+  // Register Image Compare Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.COMPARE,
+    label: 'Image Compare',
+    description: 'Compare two images side-by-side with an interactive slider',
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE],
+    outputs: [],
+    component: ImageCompareNode,
+    config: {
+      category: 'Processing',
+      color: '#00BCD4'
     }
   })
 

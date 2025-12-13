@@ -5,7 +5,8 @@ export const NODE_TYPES = {
   IMAGE: 'image',
   IMAGE_GENERATOR: 'image-generator',
   PROMPT: 'prompt',
-  DIFF: 'diff'
+  DIFF: 'diff',
+  COMPARE: 'compare'
 }
 
 /**
@@ -141,6 +142,10 @@ export const NODE_IO_CONFIG = {
     outputs: [PORT_TYPES.PROMPT]
   },
   [NODE_TYPES.DIFF]: {
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE],
+    outputs: []
+  },
+  [NODE_TYPES.COMPARE]: {
     inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE],
     outputs: []
   }
