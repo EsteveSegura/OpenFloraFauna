@@ -1,7 +1,7 @@
 <template>
   <div class="flow-canvas-container">
     <!-- Canvas de VueFlow -->
-    <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent>
+    <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent @mousemove="onMouseMove">
       <!-- Toggle button for nodes menu -->
       <button class="nodes-menu-toggle" @click="isNodesMenuOpen = !isNodesMenuOpen" :title="isNodesMenuOpen ? 'Hide nodes menu' : 'Show nodes menu'">
         {{ isNodesMenuOpen ? '✕' : '📦' }}
@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, markRaw } from 'vue'
+import { computed, onMounted, onUnmounted, ref, markRaw } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -73,6 +73,8 @@ const flowStore = useFlowStore()
 
 const fileInput = ref(null)
 const isNodesMenuOpen = ref(false)
+const copiedNode = ref(null)
+const mousePosition = ref({ x: 0, y: 0 })
 
 // VueFlow composable
 const { findNode, onConnect, addEdges, viewport } = useVueFlow()
@@ -233,4 +235,86 @@ async function onFileSelected(event) {
     setTimeout(() => flowStore.clearError(), 5000)
   }
 }
+
+// Track mouse position over canvas
+function onMouseMove(event) {
+  const canvasWrapper = event.currentTarget
+  const rect = canvasWrapper.getBoundingClientRect()
+  mousePosition.value = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  }
+}
+
+// Copy selected node
+function handleCopy() {
+  const selectedNode = flowStore.nodes.find(n => n.selected)
+  if (selectedNode) {
+    // Create a deep copy immediately to capture current state
+    copiedNode.value = {
+      ...selectedNode,
+      data: JSON.parse(JSON.stringify(selectedNode.data))
+    }
+    console.log('Node copied:', selectedNode.type, 'with data:', copiedNode.value.data)
+  }
+}
+
+// Paste copied node at mouse position
+function handlePaste() {
+  if (!copiedNode.value) return
+
+  // Calculate position at mouse, accounting for zoom and pan
+  const position = {
+    x: (mousePosition.value.x - viewport.value.x) / viewport.value.zoom,
+    y: (mousePosition.value.y - viewport.value.y) / viewport.value.zoom
+  }
+
+  // Get IO configuration for this node type
+  const ioConfig = getNodeIOConfig(copiedNode.value.type)
+
+  // Use already cloned data from handleCopy
+  const clonedData = { ...copiedNode.value.data }
+
+  // Update label to indicate it's a copy
+  if (clonedData.label) {
+    clonedData.label = `${clonedData.label} (Copy)`
+  }
+
+  // Create new node with same type and data
+  const newNode = createNode(
+    `node_${Date.now()}`,
+    copiedNode.value.type,
+    position,
+    clonedData,
+    ioConfig
+  )
+
+  // Add to store
+  flowStore.nodes.push(newNode)
+  console.log('Node pasted:', newNode.type, 'with data:', clonedData)
+}
+
+// Handle keyboard shortcuts
+function handleKeyDown(event) {
+  // Check for Ctrl+C or Cmd+C (Mac)
+  if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+    event.preventDefault()
+    handleCopy()
+  }
+
+  // Check for Ctrl+V or Cmd+V (Mac)
+  if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
+    event.preventDefault()
+    handlePaste()
+  }
+}
+
+// Setup keyboard listeners
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>

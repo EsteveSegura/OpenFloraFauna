@@ -66,6 +66,15 @@ watch(() => nodeData.value.prompt, (newPrompt) => {
   }
 })
 
+// Watch local prompt changes and update immediately
+watch(localPrompt, (newPrompt) => {
+  if (newPrompt !== nodeData.value.prompt) {
+    updateNodeData(props.id, {
+      prompt: newPrompt
+    })
+  }
+})
+
 function updatePrompt() {
   if (localPrompt.value !== nodeData.value.prompt) {
     updateNodeData(props.id, {
