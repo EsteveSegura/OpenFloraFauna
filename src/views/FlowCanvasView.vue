@@ -75,7 +75,7 @@ const fileInput = ref(null)
 const isNodesMenuOpen = ref(false)
 
 // VueFlow composable
-const { findNode, onConnect, addEdges } = useVueFlow()
+const { findNode, onConnect, addEdges, viewport } = useVueFlow()
 
 // Register connection handler - use addEdges directly
 onConnect((params) => {
@@ -120,10 +120,10 @@ function onDrop(event) {
   const canvasWrapper = event.currentTarget
   const rect = canvasWrapper.getBoundingClientRect()
 
-  // Calculate position relative to canvas
+  // Calculate position relative to canvas, accounting for zoom and pan
   const position = {
-    x: event.clientX - rect.left - 75, // Center node (width ~150px)
-    y: event.clientY - rect.top - 50   // Center node (height ~100px)
+    x: (event.clientX - rect.left - viewport.value.x) / viewport.value.zoom - 75, // Center node (width ~150px)
+    y: (event.clientY - rect.top - viewport.value.y) / viewport.value.zoom - 50   // Center node (height ~100px)
   }
 
   // Get node definition from registry
