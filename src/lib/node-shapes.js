@@ -7,7 +7,8 @@ export const NODE_TYPES = {
   PROMPT: 'prompt',
   DIFF: 'diff',
   COMPARE: 'compare',
-  TEXT_GENERATOR: 'text-generator'
+  TEXT_GENERATOR: 'text-generator',
+  GROUP: 'group'
 }
 
 /**
@@ -153,6 +154,10 @@ export const NODE_IO_CONFIG = {
   [NODE_TYPES.TEXT_GENERATOR]: {
     inputs: [PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.PROMPT]
+  },
+  [NODE_TYPES.GROUP]: {
+    inputs: [],
+    outputs: []
   }
 }
 

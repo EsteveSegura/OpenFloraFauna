@@ -14,13 +14,24 @@ export function exportFlow(flowStore) {
   return {
     version: FLOW_VERSION,
     createdAt: new Date().toISOString(),
-    nodes: flowStore.nodes.map(node => ({
-      id: node.id,
-      type: node.type,
-      position: node.position,
-      data: node.data,
-      io: node.io
-    })),
+    nodes: flowStore.nodes.map(node => {
+      const exported = {
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: node.data,
+        io: node.io
+      }
+
+      // Include nesting/grouping properties (only if they exist)
+      if (node.parentNode !== undefined) exported.parentNode = node.parentNode
+      if (node.extent !== undefined) exported.extent = node.extent
+      if (node.expandParent !== undefined) exported.expandParent = node.expandParent
+      if (node.style !== undefined) exported.style = node.style
+      if (node.class !== undefined) exported.class = node.class
+
+      return exported
+    }),
     edges: flowStore.edges.map(edge => ({
       id: edge.id,
       source: edge.source,
@@ -123,13 +134,24 @@ export async function importFlow(flowData, flowStore, vueFlowHelpers = {}) {
     flowStore.edges.splice(0, flowStore.edges.length)
 
     // Import nodes (push to maintain reference)
-    const importedNodes = flowData.nodes.map(node => ({
-      id: node.id,
-      type: node.type,
-      position: node.position,
-      data: node.data,
-      io: node.io
-    }))
+    const importedNodes = flowData.nodes.map(node => {
+      const imported = {
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: node.data,
+        io: node.io
+      }
+
+      // Include nesting/grouping properties (only if they exist)
+      if (node.parentNode !== undefined) imported.parentNode = node.parentNode
+      if (node.extent !== undefined) imported.extent = node.extent
+      if (node.expandParent !== undefined) imported.expandParent = node.expandParent
+      if (node.style !== undefined) imported.style = node.style
+      if (node.class !== undefined) imported.class = node.class
+
+      return imported
+    })
     flowStore.nodes.push(...importedNodes)
 
     // Wait for Vue to process nodes before adding edges

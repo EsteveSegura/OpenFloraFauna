@@ -11,6 +11,7 @@ import PromptNode from '@/components/nodes/PromptNode.vue'
 import DiffNode from '@/components/nodes/DiffNode.vue'
 import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
 import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
+import GroupNode from '@/components/nodes/GroupNode.vue'
 
 /**
  * Register all available node types
@@ -97,6 +98,20 @@ export function registerAllNodes() {
     config: {
       category: 'Generator',
       color: '#E91E63'
+    }
+  })
+
+  // Register Group Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.GROUP,
+    label: 'Group',
+    description: 'Visual container to group nodes together',
+    inputs: [],
+    outputs: [],
+    component: GroupNode,
+    config: {
+      category: 'Layout',
+      color: '#16a34a'
     }
   })
 
