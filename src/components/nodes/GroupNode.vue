@@ -1,5 +1,7 @@
 <template>
   <div class="group-node">
+    <NodeResizer v-if="selected" min-width="200" min-height="150" />
+
     <div
       ref="labelDiv"
       class="group-label"
@@ -16,6 +18,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { NodeResizer } from '@vue-flow/node-resizer'
+import '@vue-flow/node-resizer/dist/style.css'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -67,5 +71,14 @@ function blurOnEnter(event) {
 
 .group-label::placeholder {
   color: rgba(255, 255, 255, 0.6);
+}
+
+/* Enable pointer events for NodeResizer controls */
+.group-node :deep(.vue-flow__resize-control) {
+  pointer-events: auto !important;
+}
+
+.group-node :deep(.vue-flow__resizer) {
+  pointer-events: auto !important;
 }
 </style>
