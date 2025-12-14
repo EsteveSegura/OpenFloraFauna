@@ -116,9 +116,41 @@ function onDragStart(event, nodeType) {
   event.dataTransfer.effectAllowed = 'move'
 }
 
-function onDrop(event) {
-  if (!draggedNodeType) return
+// Handle image file drop
+function handleImageFileDrop(file, position) {
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    // Get IO configuration for image node
+    const ioConfig = getNodeIOConfig(NODE_TYPES.IMAGE)
 
+    // Create image node with the file data
+    const newNode = createNode(
+      `node_${Date.now()}`,
+      NODE_TYPES.IMAGE,
+      position,
+      {
+        label: 'Image',
+        src: event.target.result,
+        name: file.name
+      },
+      ioConfig
+    )
+
+    // Add to store
+    flowStore.nodes.push(newNode)
+    console.log('Image node created from file:', file.name)
+  }
+
+  reader.onerror = (error) => {
+    console.error('Error reading image file:', error)
+    flowStore.setError('Failed to load image file')
+    setTimeout(() => flowStore.clearError(), 5000)
+  }
+
+  reader.readAsDataURL(file)
+}
+
+function onDrop(event) {
   const canvasWrapper = event.currentTarget
   const rect = canvasWrapper.getBoundingClientRect()
 
@@ -127,6 +159,21 @@ function onDrop(event) {
     x: (event.clientX - rect.left - viewport.value.x) / viewport.value.zoom - 75, // Center node (width ~150px)
     y: (event.clientY - rect.top - viewport.value.y) / viewport.value.zoom - 50   // Center node (height ~100px)
   }
+
+  // Check if dropping a file (image)
+  const files = event.dataTransfer.files
+  if (files && files.length > 0) {
+    const file = files[0]
+    // Check if it's an image file
+    if (file.type.startsWith('image/')) {
+      event.preventDefault()
+      handleImageFileDrop(file, position)
+      return
+    }
+  }
+
+  // Regular node drop
+  if (!draggedNodeType) return
 
   // Get node definition from registry
   const nodeDef = nodeRegistry.getNodeDef(draggedNodeType)
