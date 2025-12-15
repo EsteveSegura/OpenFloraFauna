@@ -259,6 +259,75 @@ class ReplicateService {
   }
 
   /**
+   * Transform Replicate API URL to use local proxy
+   * @param {string} url - Original Replicate API URL
+   * @returns {string} Transformed URL for local proxy
+   * @private
+   */
+  _transformUrlToProxy(url) {
+    // Replace https://api.replicate.com/v1 with http://localhost:1111/v1
+    return url.replace('https://api.replicate.com/v1', this.config.apiUrl)
+  }
+
+  /**
+   * Poll prediction status until completed
+   * @param {string} pollUrl - URL to poll for prediction status
+   * @param {string} token - API token
+   * @param {number} maxWaitTime - Maximum time to wait in ms (default: 3 minutes)
+   * @returns {Promise<Object>} Final prediction response
+   * @private
+   */
+  async _pollPrediction(pollUrl, token, maxWaitTime = 180000) {
+    const startTime = Date.now()
+    const pollInterval = 3500 // 3.5 seconds
+
+    // Transform URL to use local proxy
+    const transformedUrl = this._transformUrlToProxy(pollUrl)
+    console.log(`Transformed polling URL: ${pollUrl} -> ${transformedUrl}`)
+
+    while (true) {
+      // Check if we've exceeded max wait time
+      if (Date.now() - startTime > maxWaitTime) {
+        throw new Error('Prediction polling timeout after 3 minutes')
+      }
+
+      // Poll the prediction status
+      const response = await fetch(transformedUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.detail || `Polling failed with status ${response.status}`)
+      }
+
+      const prediction = await response.json()
+
+      console.log(`Polling prediction ${prediction.id}: status=${prediction.status}`)
+
+      // Check prediction status
+      if (prediction.status === 'succeeded') {
+        return prediction
+      }
+
+      if (prediction.status === 'failed') {
+        throw new Error(prediction.error || 'Prediction failed')
+      }
+
+      if (prediction.status === 'canceled') {
+        throw new Error('Prediction was canceled')
+      }
+
+      // Status is 'starting' or 'processing' - wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollInterval))
+    }
+  }
+
+  /**
    * Call Replicate API
    * @param {string} endpoint - API endpoint
    * @param {Object} input - Input payload
@@ -282,7 +351,7 @@ class ReplicateService {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Prefer': 'wait' // Wait for synchronous response
+          'Prefer': 'wait' // Wait for synchronous response (up to 60s)
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal
@@ -295,7 +364,22 @@ class ReplicateService {
         throw new Error(error.detail || `API request failed with status ${response.status}`)
       }
 
-      return await response.json()
+      const prediction = await response.json()
+
+      // Check if prediction is already completed
+      if (prediction.status === 'succeeded') {
+        console.log('Prediction completed immediately')
+        return prediction
+      }
+
+      // If not succeeded, we need to poll using urls.get
+      if (prediction.urls && prediction.urls.get) {
+        console.log(`Prediction not ready (status: ${prediction.status}), starting polling...`)
+        return await this._pollPrediction(prediction.urls.get, token)
+      }
+
+      // Fallback: if no urls.get, return as is (shouldn't happen normally)
+      return prediction
     } catch (error) {
       clearTimeout(timeoutId)
 
