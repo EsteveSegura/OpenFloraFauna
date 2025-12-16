@@ -90,7 +90,7 @@ function updatePrompt() {
   flex-direction: column;
   gap: var(--flora-space-2);
   padding: var(--flora-space-3);
-  min-width: 250px;
+  min-width: 450px;
 }
 
 .character-count {
