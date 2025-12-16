@@ -187,7 +187,7 @@ nodeRegistry.listNodes().forEach(nodeDef => {
 })
 
 // Get available nodes from registry
-const availableNodes = computed(() => nodeRegistry.listNodes())
+const availableNodes = computed(() => nodeRegistry.listNodes().filter(node => !node.config?.hidden))
 
 // Get icon for node type
 function getNodeIcon(type) {

@@ -101,7 +101,7 @@ export function registerAllNodes() {
     }
   })
 
-  // Register Group Node
+  // Register Group Node (hidden from menu, only created via Ctrl+G)
   nodeRegistry.registerNode({
     type: NODE_TYPES.GROUP,
     label: 'Group',
@@ -111,7 +111,8 @@ export function registerAllNodes() {
     component: GroupNode,
     config: {
       category: 'Layout',
-      color: '#16a34a'
+      color: '#16a34a',
+      hidden: true // Hidden from the nodes menu
     }
   })
 
