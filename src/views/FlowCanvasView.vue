@@ -3,7 +3,7 @@
     <!-- Canvas de VueFlow -->
     <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent @mousemove="onMouseMove">
       <!-- Floating Menu -->
-      <div class="floating-menu">
+      <div class="floating-menu" ref="floatingMenu">
         <button
           class="menu-icon-button"
           @click="isNodesMenuOpen = !isNodesMenuOpen"
@@ -47,7 +47,7 @@
       </div>
 
       <!-- Floating Sidebar para drag & drop de nodos -->
-      <aside v-if="isNodesMenuOpen" class="sidebar">
+      <aside v-if="isNodesMenuOpen" class="sidebar" ref="sidebarMenu">
         <h3>Nodes</h3>
         <div
           v-for="nodeDef in availableNodes"
@@ -55,6 +55,7 @@
           class="node-item"
           draggable="true"
           @dragstart="onDragStart($event, nodeDef.type)"
+          @click="onNodeItemClick(nodeDef.type)"
         >
           {{ getNodeIcon(nodeDef.type) }} {{ nodeDef.label }}
         </div>
@@ -111,6 +112,8 @@ const isNodesMenuOpen = ref(false)
 const copiedNode = ref(null)
 const mousePosition = ref({ x: 0, y: 0 })
 const isLocked = ref(false)
+const floatingMenu = ref(null)
+const sidebarMenu = ref(null)
 
 // VueFlow composable
 const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
@@ -233,12 +236,104 @@ function handleFitView() {
   fitView({ duration: 300, padding: 0.2 })
 }
 
+// Close menu when clicking outside
+function handleClickOutside(event) {
+  if (!isNodesMenuOpen.value) return
+
+  const clickedFloatingMenu = floatingMenu.value?.contains(event.target)
+  const clickedSidebar = sidebarMenu.value?.contains(event.target)
+
+  if (!clickedFloatingMenu && !clickedSidebar) {
+    isNodesMenuOpen.value = false
+  }
+}
+
 // Drag & Drop
 let draggedNodeType = null
+let isDragging = false
 
 function onDragStart(event, nodeType) {
   draggedNodeType = nodeType
+  isDragging = true
   event.dataTransfer.effectAllowed = 'move'
+}
+
+// Create node at viewport center when clicking (not dragging)
+function onNodeItemClick(nodeType) {
+  // Small delay to check if drag started
+  setTimeout(() => {
+    if (isDragging) {
+      isDragging = false
+      return
+    }
+
+    // Get canvas wrapper dimensions
+    const canvasWrapper = document.querySelector('.canvas-wrapper')
+    if (!canvasWrapper) return
+
+    const rect = canvasWrapper.getBoundingClientRect()
+
+    // Calculate center of viewport in canvas coordinates
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+
+    const position = {
+      x: (centerX - viewport.value.x) / viewport.value.zoom - 75, // Center node (width ~150px)
+      y: (centerY - viewport.value.y) / viewport.value.zoom - 50   // Center node (height ~100px)
+    }
+
+    createNodeAtPosition(nodeType, position)
+    isNodesMenuOpen.value = false
+  }, 100)
+}
+
+// Helper function to create a node at a specific position
+function createNodeAtPosition(nodeType, position) {
+  // Get node definition from registry
+  const nodeDef = nodeRegistry.getNodeDef(nodeType)
+  if (!nodeDef) {
+    console.error(`Node type ${nodeType} not found in registry`)
+    return
+  }
+
+  // Get IO configuration for this node type
+  const ioConfig = getNodeIOConfig(nodeType)
+
+  // Create node data
+  const data = {
+    label: `New ${nodeDef.label}`
+  }
+
+  // Add prompt field and model params for generator nodes
+  if (nodeType === NODE_TYPES.IMAGE_GENERATOR) {
+    data.prompt = ''
+    data.model = 'nano-banana-pro'
+    data.params = replicateService.getModelDefaults('nano-banana-pro')
+  }
+
+  // Add prompt field and model params for text generator nodes
+  if (nodeType === NODE_TYPES.TEXT_GENERATOR) {
+    data.prompt = ''
+    data.model = 'gpt-5'
+    data.params = replicateService.getModelDefaults('gpt-5')
+  }
+
+  // Add prompt field for prompt nodes
+  if (nodeType === NODE_TYPES.PROMPT) {
+    data.prompt = ''
+  }
+
+  // Create new node using the schema
+  const newNode = createNode(
+    `node_${Date.now()}`,
+    nodeType,
+    position,
+    data,
+    ioConfig
+  )
+
+  // Mutate store array directly - preserves component instances
+  flowStore.nodes.push(newNode)
 }
 
 // Handle image file drop
@@ -293,6 +388,7 @@ function onDrop(event) {
     if (file.type.startsWith('image/')) {
       event.preventDefault()
       handleImageFileDrop(file, position)
+      isNodesMenuOpen.value = false
       return
     }
   }
@@ -300,53 +396,13 @@ function onDrop(event) {
   // Regular node drop
   if (!draggedNodeType) return
 
-  // Get node definition from registry
-  const nodeDef = nodeRegistry.getNodeDef(draggedNodeType)
-  if (!nodeDef) {
-    console.error(`Node type ${draggedNodeType} not found in registry`)
-    draggedNodeType = null
-    return
-  }
-
-  // Get IO configuration for this node type
-  const ioConfig = getNodeIOConfig(draggedNodeType)
-
-  // Create node data
-  const data = {
-    label: `New ${nodeDef.label}`
-  }
-
-  // Add prompt field and model params for generator nodes
-  if (draggedNodeType === NODE_TYPES.IMAGE_GENERATOR) {
-    data.prompt = ''
-    data.model = 'nano-banana-pro'
-    data.params = replicateService.getModelDefaults('nano-banana-pro')
-  }
-
-  // Add prompt field and model params for text generator nodes
-  if (draggedNodeType === NODE_TYPES.TEXT_GENERATOR) {
-    data.prompt = ''
-    data.model = 'gpt-5'
-    data.params = replicateService.getModelDefaults('gpt-5')
-  }
-
-  // Add prompt field for prompt nodes
-  if (draggedNodeType === NODE_TYPES.PROMPT) {
-    data.prompt = ''
-  }
-
-  // Create new node using the schema
-  const newNode = createNode(
-    `node_${Date.now()}`,
-    draggedNodeType,
-    position,
-    data,
-    ioConfig
-  )
-
-  // Mutate store array directly - preserves component instances
-  flowStore.nodes.push(newNode)
+  // Create node at drop position
+  createNodeAtPosition(draggedNodeType, position)
   draggedNodeType = null
+  isDragging = false
+
+  // Close nodes menu after dropping
+  isNodesMenuOpen.value = false
 }
 
 // Validate connection before allowing it (visual feedback)
@@ -586,13 +642,15 @@ function handleKeyDown(event) {
   }
 }
 
-// Setup keyboard listeners
+// Setup keyboard listeners and click outside handler
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
