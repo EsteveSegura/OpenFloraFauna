@@ -44,6 +44,17 @@
         >
           <img :src="ReframeIcon" alt="Fit View" />
         </button>
+
+        <!-- Separator -->
+        <div class="menu-separator"></div>
+
+        <button
+          class="menu-icon-button"
+          @click="isSettingsModalOpen = true"
+          title="Settings"
+        >
+          <img :src="GearIcon" alt="Settings" />
+        </button>
       </div>
 
       <!-- Floating Sidebar para drag & drop de nodos -->
@@ -88,6 +99,31 @@
         <Background pattern-color="#242424" :gap="24" variant="dots" size="2" />
       </VueFlow>
     </div>
+
+    <!-- Settings Modal -->
+    <BaseModal
+      v-model="isSettingsModalOpen"
+      title="Settings"
+      :show-header="true"
+      :show-footer="false"
+      size="md"
+    >
+      <div class="settings-content">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Node Appearance</h3>
+          <div class="settings-option">
+            <BaseCheckbox
+              id="show-node-headers"
+              v-model="settingsStore.showNodeHeaders"
+              label="Show node headers"
+            />
+            <p class="settings-option-description">
+              Display node headers with icons and labels
+            </p>
+          </div>
+        </div>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -101,11 +137,16 @@ import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-
 import nodeRegistry from '@/lib/node-registry'
 import { downloadFlow, loadFlowFromFile } from '@/lib/flow-io'
 import replicateService from '@/services/replicate'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
+import { useSettingsStore } from '@/stores/settings'
 import LockIcon from '@/assets/lock.svg'
 import UnlockIcon from '@/assets/unlock.svg'
 import ReframeIcon from '@/assets/reframe.svg'
+import GearIcon from '@/assets/gear.svg'
 
 const flowStore = useFlowStore()
+const settingsStore = useSettingsStore()
 
 const fileInput = ref(null)
 const isNodesMenuOpen = ref(false)
@@ -114,6 +155,7 @@ const mousePosition = ref({ x: 0, y: 0 })
 const isLocked = ref(false)
 const floatingMenu = ref(null)
 const sidebarMenu = ref(null)
+const isSettingsModalOpen = ref(false)
 
 // VueFlow composable
 const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
@@ -769,5 +811,40 @@ onUnmounted(() => {
 
 .node-item:active {
   cursor: grabbing;
+}
+
+/* Settings Modal */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--flora-space-4);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--flora-space-3);
+}
+
+.settings-section-title {
+  margin: 0;
+  font-size: var(--flora-font-size-base);
+  font-weight: var(--flora-font-weight-semibold);
+  color: var(--flora-color-text-primary);
+  padding-bottom: var(--flora-space-2);
+  border-bottom: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+}
+
+.settings-option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--flora-space-1);
+}
+
+.settings-option-description {
+  margin: 0;
+  font-size: var(--flora-font-size-xs);
+  color: var(--flora-color-text-tertiary);
+  padding-left: calc(18px + var(--flora-space-2));
 }
 </style>

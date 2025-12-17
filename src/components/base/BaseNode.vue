@@ -42,7 +42,7 @@
     </Handle>
 
     <!-- Header Slot -->
-    <div class="node-header">
+    <div v-if="settingsStore.showNodeHeaders" class="node-header">
       <slot name="header">
         <span class="node-icon">{{ icon }}</span>
         <span class="node-label">{{ label }}</span>
@@ -75,6 +75,9 @@
 <script setup>
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const props = defineProps({
   id: {
