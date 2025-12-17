@@ -2,13 +2,20 @@
 
 ## Overview
 
-The Pinia store (`useFlowStore`) is the centralized application state that stores nodes, edges, and UI state. It uses the Composition API and automatically synchronizes with VueFlow through `v-model`.
+Flora uses Pinia for state management with two stores:
 
-**File:** `src/stores/flow.js`
+1. **Flow Store** (`useFlowStore`) - Canvas nodes, edges, and UI state
+2. **Settings Store** (`useSettingsStore`) - App configuration and preferences
+
+Both use the Composition API and provide reactive state management.
+
+**Files:**
+- `src/stores/flow.js`
+- `src/stores/settings.js`
 
 ---
 
-## Store Structure
+## Flow Store Structure
 
 ```javascript
 {
@@ -62,6 +69,133 @@ updateNodeData(nodeId, { prompt: 'new text' })
 
 // Add edges - use VueFlow composable
 addEdges([newEdge])
+```
+
+---
+
+## Settings Store Structure
+
+```javascript
+{
+  // Data state
+  showNodeHeaders: ref(false),  // Show/hide node headers (default: false)
+
+  // Actions
+  toggleNodeHeaders(),          // Toggle header visibility
+  setNodeHeaders(boolean)       // Set specific value
+}
+```
+
+### Settings Store Usage
+
+#### In Components
+
+```javascript
+<script setup>
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
+
+// Access settings
+console.log(settingsStore.showNodeHeaders) // false
+
+// Toggle setting
+settingsStore.toggleNodeHeaders()
+
+// Set specific value
+settingsStore.setNodeHeaders(true)
+</script>
+```
+
+#### In BaseNode.vue
+
+The BaseNode component uses the settings store to control header visibility:
+
+```vue
+<template>
+  <div class="base-node">
+    <!-- Header only shown if setting is enabled -->
+    <div v-if="settingsStore.showNodeHeaders" class="node-header">
+      <slot name="header">
+        <span class="node-icon">{{ icon }}</span>
+        <span class="node-label">{{ label }}</span>
+      </slot>
+    </div>
+    <!-- Node content -->
+    <slot></slot>
+  </div>
+</template>
+
+<script setup>
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
+</script>
+```
+
+#### In Settings Modal
+
+The settings modal provides UI to change settings:
+
+```vue
+<template>
+  <BaseModal v-model="isOpen" title="Settings">
+    <div class="settings-content">
+      <BaseCheckbox
+        id="show-node-headers"
+        v-model="settingsStore.showNodeHeaders"
+        label="Show node headers"
+      />
+    </div>
+  </BaseModal>
+</template>
+
+<script setup>
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
+</script>
+```
+
+### Adding New Settings
+
+To add a new setting:
+
+1. Add the state to `src/stores/settings.js`:
+```javascript
+export const useSettingsStore = defineStore('settings', () => {
+  const showNodeHeaders = ref(false)
+  const newSetting = ref(defaultValue) // New setting
+
+  function setNewSetting(value) {
+    newSetting.value = value
+  }
+
+  return {
+    showNodeHeaders,
+    newSetting,
+    setNewSetting,
+    // ... other exports
+  }
+})
+```
+
+2. Add UI control in `SettingsModal.vue`:
+```vue
+<BaseCheckbox
+  id="new-setting"
+  v-model="settingsStore.newSetting"
+  label="New Setting Description"
+/>
+```
+
+3. Use the setting in components:
+```javascript
+const settingsStore = useSettingsStore()
+
+if (settingsStore.newSetting) {
+  // Do something
+}
 ```
 
 ---

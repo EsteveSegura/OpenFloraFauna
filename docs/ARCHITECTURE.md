@@ -23,15 +23,30 @@ flora/
 │   ├── components/
 │   │   ├── base/
 │   │   │   └── BaseNode.vue          # Base component for all nodes
+│   │   ├── canvas/
+│   │   │   ├── FloatingMenu.vue      # Left sidebar menu with actions
+│   │   │   ├── NodesSidebar.vue      # Draggable nodes list
+│   │   │   └── SettingsModal.vue     # Settings configuration modal
 │   │   └── nodes/
 │   │       ├── ImageNode.vue          # Image node
 │   │       ├── PromptNode.vue         # Text/prompt node
 │   │       ├── ImageGeneratorNode.vue # Image generator node
+│   │       ├── GroupNode.vue          # Group container node
+│   │       ├── TextGeneratorNode.vue  # Text generator node
 │   │       └── DiffNode.vue           # Image comparison node
+│   ├── composables/
+│   │   ├── useFlowIO.js              # Import/export operations
+│   │   ├── useViewportControls.js    # Lock/unlock and fit view
+│   │   ├── useCopyPaste.js           # Copy/paste node operations
+│   │   ├── useNodeCreation.js        # Node creation helpers
+│   │   ├── useDragAndDrop.js         # Drag & drop logic
+│   │   ├── useGroupManagement.js     # Group/ungroup operations
+│   │   └── useKeyboardShortcuts.js   # Global keyboard shortcuts
 │   ├── views/
-│   │   └── FlowCanvasView.vue        # Main app canvas
+│   │   └── FlowCanvasView.vue        # Main app canvas (~177 lines)
 │   ├── stores/
-│   │   └── flow.js                   # Pinia store (global state)
+│   │   ├── flow.js                   # Pinia store (nodes/edges)
+│   │   └── settings.js               # Settings store (app config)
 │   ├── lib/
 │   │   ├── node-shapes.js            # Node schemas and types
 │   │   ├── node-registry.js          # Node component registry
@@ -45,7 +60,7 @@ flora/
 │   ├── STORE.md                      # Store guide
 │   ├── CREATING-NODES.md             # Node creation guide
 │   └── ARCHITECTURE.md               # This document
-└── TASK-*.md                         # Migration documentation
+└── MODULARIZATION_PLAN.md            # Modularization documentation
 ```
 
 ---
@@ -83,19 +98,42 @@ User interacts with Canvas
 
 ### 1. FlowCanvasView.vue
 
-**Responsibility:** Main canvas, drag & drop, node/edge management
+**Responsibility:** Main canvas coordinator (~177 lines after modularization)
+
+**Modularization:** The view has been heavily refactored into reusable components and composables:
+
+**UI Components:**
+- `FloatingMenu.vue` - Left sidebar with action buttons
+- `NodesSidebar.vue` - Draggable nodes list
+- `SettingsModal.vue` - Settings configuration
 
 **Composables used:**
 ```javascript
-const { findNode, onConnect, addEdges } = useVueFlow()
+// VueFlow core
+const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
+
+// Logic composables
+const { fileInput, handleExport, handleImport, onFileSelected } = useFlowIO(flowStore, { addEdges })
+const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
+const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition)
+const { createNodeAtPosition } = useNodeCreation(flowStore)
+
+// Complex composables
+const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore)
+const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore })
 ```
 
 **Features:**
-- Available nodes sidebar
-- Drag & drop nodes to canvas
+- Available nodes sidebar with drag & drop
+- Click node to create at viewport center
 - Real-time connection validation
 - Flow export/import
-- Node type registration
+- Viewport controls (lock, fit view)
+- Copy/paste nodes (Ctrl+C, Ctrl+V)
+- Group nodes (Ctrl+G)
+- Settings modal
+- Automatic group management
 
 **Synchronization pattern:**
 ```vue
@@ -104,6 +142,11 @@ const { findNode, onConnect, addEdges } = useVueFlow()
   v-model:edges="flowStore.edges"
 >
 ```
+
+**Modularization results:**
+- Original: ~850 lines
+- Current: ~177 lines
+- Reduction: -79.2%
 
 ### 2. BaseNode.vue
 
@@ -126,6 +169,19 @@ const { findNode, onConnect, addEdges } = useVueFlow()
 - Manages visual state (selected, loading, error)
 - Optional action button (`@action:run`)
 - Consistent styles for all nodes
+- Optional header display controlled by settings store
+
+**Settings integration:**
+```javascript
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
+
+// Header visibility controlled by setting
+<div v-if="settingsStore.showNodeHeaders" class="node-header">
+  ...
+</div>
+```
 
 ### 3. Custom Nodes
 
@@ -218,11 +274,110 @@ Executed at two moments:
 
 ---
 
+## Composables Architecture
+
+Flora uses Vue 3 composables pattern to separate and reuse logic. All composables are in `src/composables/`:
+
+### Logic Composables
+
+**useFlowIO.js** - Import/export operations
+```javascript
+export function useFlowIO(flowStore, { addEdges }) {
+  const fileInput = ref(null)
+
+  function handleExport() { /* ... */ }
+  function handleImport() { /* ... */ }
+  function onFileSelected(event) { /* ... */ }
+
+  return { fileInput, handleExport, handleImport, onFileSelected }
+}
+```
+
+**useViewportControls.js** - Lock/unlock and fit view
+```javascript
+export function useViewportControls(fitView) {
+  const isLocked = ref(false)
+
+  function handleLockToggle() { /* ... */ }
+  function handleFitView() { /* ... */ }
+
+  return { isLocked, handleLockToggle, handleFitView }
+}
+```
+
+**useCopyPaste.js** - Copy/paste node operations
+```javascript
+export function useCopyPaste(flowStore, viewport, mousePosition) {
+  const copiedNode = ref(null)
+
+  function handleCopy() { /* ... */ }
+  function handlePaste() { /* ... */ }
+
+  return { copiedNode, handleCopy, handlePaste }
+}
+```
+
+**useNodeCreation.js** - Node creation helpers
+```javascript
+export function useNodeCreation(flowStore) {
+  function createNodeAtPosition(nodeType, position) { /* ... */ }
+
+  return { createNodeAtPosition }
+}
+```
+
+### Complex Composables
+
+**useDragAndDrop.js** - Drag & drop logic for nodes and images
+```javascript
+export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore) {
+  function onDragStart(event, nodeType) { /* ... */ }
+  function onNodeItemClick(nodeType) { /* ... */ }
+  function onDrop(event) { /* ... */ }
+  function handleImageFileDrop(file, position) { /* ... */ }
+
+  return { onDragStart, onNodeItemClick, onDrop }
+}
+```
+
+**useGroupManagement.js** - Group/ungroup operations
+```javascript
+export function useGroupManagement(flowStore, onNodeDragStop) {
+  function setupDragStopHandler() { /* ... */ }
+  async function handleGroup() { /* ... */ }
+
+  setupDragStopHandler()
+
+  return { handleGroup }
+}
+```
+
+**useKeyboardShortcuts.js** - Global keyboard shortcuts
+```javascript
+export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore }) {
+  function handleKeyDown(event) { /* ... */ }
+
+  onMounted(() => window.addEventListener('keydown', handleKeyDown))
+  onUnmounted(() => window.removeEventListener('keydown', handleKeyDown))
+
+  return {}
+}
+```
+
+### Composables Benefits
+
+- ✅ **Reusability** - Logic can be shared across components
+- ✅ **Testability** - Each composable can be tested independently
+- ✅ **Maintainability** - Single responsibility principle
+- ✅ **Readability** - Main component stays focused and clean
+
+---
+
 ## State Management (Pinia)
 
-### Minimalist Store
+### Flow Store
 
-The store only maintains essential state:
+The flow store (`useFlowStore`) maintains canvas state:
 
 ```javascript
 {
@@ -239,6 +394,20 @@ The store only maintains essential state:
 }
 ```
 
+### Settings Store
+
+The settings store (`useSettingsStore`) maintains app configuration:
+
+```javascript
+{
+  showNodeHeaders: ref(false),  // Show/hide node headers
+
+  // Actions
+  toggleNodeHeaders(),
+  setNodeHeaders(value)
+}
+```
+
 ### Why so simple?
 
 VueFlow handles internally:
@@ -251,6 +420,7 @@ We only need:
 - ✅ Reactive arrays for v-model
 - ✅ UI state (loading, error)
 - ✅ Canvas reset
+- ✅ App settings
 
 ---
 
@@ -776,7 +946,20 @@ export function validateConnection(connection, sourceNode, targetNode, edges) {
 
 ## Architecture Changelog
 
-### v2.0 - VueFlow Composables Migration (Current)
+### v3.0 - Modularization (Current)
+
+- ✅ FlowCanvasView reduced from ~850 to ~177 lines (-79.2%)
+- ✅ Extracted 3 UI components (FloatingMenu, NodesSidebar, SettingsModal)
+- ✅ Created 7 composables for logic separation
+- ✅ Added settings store for app configuration
+- ✅ Implemented keyboard shortcuts (Ctrl+C/V/G)
+- ✅ Added group management functionality
+- ✅ Copy/paste nodes feature
+- ✅ Viewport controls (lock/unlock, fit view)
+- ✅ Optional node headers via settings
+- ✅ Click node to create at viewport center
+
+### v2.0 - VueFlow Composables Migration
 
 - ✅ Simplified store (removed 6 actions, 2 getters)
 - ✅ VueFlow composables in all nodes

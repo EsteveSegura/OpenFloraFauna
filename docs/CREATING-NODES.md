@@ -257,9 +257,51 @@ export const PORT_TYPES = {
 
 ## Step 5: Initialize in FlowCanvasView
 
-In `src/views/FlowCanvasView.vue`, add data initialization if needed:
+In `src/views/FlowCanvasView.vue` or `src/composables/useNodeCreation.js`, add data initialization if needed:
+
+### Option A: In useNodeCreation composable (Recommended)
 
 ```javascript
+// src/composables/useNodeCreation.js
+export function useNodeCreation(flowStore) {
+  function createNodeAtPosition(nodeType, position) {
+    const nodeDef = nodeRegistry.getNode(nodeType)
+    const ioConfig = getNodeIOConfig(nodeType)
+
+    const data = {
+      label: `New ${nodeDef.label}`
+    }
+
+    // Node type-specific data
+    if (nodeType === NODE_TYPES.TEXT_ANALYZER) {
+      data.text = ''
+      data.analysis = null
+      data.options = {
+        mode: 'sentiment',
+        language: 'en'
+      }
+    }
+
+    // Create node
+    const newNode = createNode(
+      `node_${Date.now()}`,
+      nodeType,
+      position,
+      data,
+      ioConfig
+    )
+
+    flowStore.nodes.push(newNode)
+  }
+
+  return { createNodeAtPosition }
+}
+```
+
+### Option B: In FlowCanvasView directly
+
+```javascript
+// src/views/FlowCanvasView.vue
 function onDrop(event) {
   // ... existing code ...
 
@@ -289,6 +331,8 @@ function onDrop(event) {
   flowStore.nodes.push(newNode)
 }
 ```
+
+**Note:** FlowCanvasView has been modularized and now uses composables. It's recommended to add node initialization logic in the `useNodeCreation` composable for better code organization.
 
 ---
 

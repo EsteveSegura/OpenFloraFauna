@@ -142,13 +142,27 @@ src/
 ├── components/
 │   ├── base/
 │   │   └── BaseNode.vue          # Base component for all nodes
+│   ├── canvas/                    # Canvas UI components
+│   │   ├── FloatingMenu.vue      # Left sidebar menu
+│   │   ├── NodesSidebar.vue      # Draggable nodes list
+│   │   └── SettingsModal.vue     # Settings modal
 │   └── nodes/                     # All custom nodes
 │
+├── composables/                   # Reusable logic
+│   ├── useFlowIO.js              # Import/export operations
+│   ├── useViewportControls.js    # Lock/unlock and fit view
+│   ├── useCopyPaste.js           # Copy/paste nodes
+│   ├── useNodeCreation.js        # Node creation helpers
+│   ├── useDragAndDrop.js         # Drag & drop logic
+│   ├── useGroupManagement.js     # Group/ungroup operations
+│   └── useKeyboardShortcuts.js   # Global shortcuts
+│
 ├── views/
-│   └── FlowCanvasView.vue        # Main canvas
+│   └── FlowCanvasView.vue        # Main canvas (~177 lines)
 │
 ├── stores/
-│   └── flow.js                   # Pinia store (global state)
+│   ├── flow.js                   # Pinia store (nodes/edges)
+│   └── settings.js               # Settings store (config)
 │
 ├── lib/
 │   ├── node-shapes.js            # Node types and schemas
@@ -220,17 +234,27 @@ Guides are in `docs/` and are Markdown files. Pull requests welcome!
 
 ---
 
-## 📋 Completed Migration Tasks
+## 📋 Recent Improvements
 
-The project has recently been migrated to use VueFlow's native composables. Task documentation is in:
+### v3.0 - Modularization (2025-12)
 
-- `TASK-1-simplificar-store.md` - Simplified store
-- `TASK-2-actualizar-flowcanvasview.md` - Canvas migrated to composables
-- `TASK-3-migrar-imagegeneratornode.md` - Main node migrated
-- `TASK-4-migrar-otros-nodos.md` - Other nodes migrated
+The project has been heavily modularized with composables pattern:
 
-**Migration benefits:**
-- ✅ -67% less code
+**Achievements:**
+- ✅ FlowCanvasView reduced from ~850 to ~177 lines (-79.2%)
+- ✅ Extracted 3 UI components (FloatingMenu, NodesSidebar, SettingsModal)
+- ✅ Created 7 composables for logic separation
+- ✅ Added settings store for app configuration
+- ✅ Implemented keyboard shortcuts (Ctrl+C/V/G)
+- ✅ Added group management functionality
+- ✅ Copy/paste nodes feature
+- ✅ Viewport controls (lock/unlock, fit view)
+
+### v2.0 - VueFlow Composables Migration (2025-11)
+
+Migrated to use VueFlow's native composables:
+
+- ✅ Simplified store (removed 6 actions, 2 getters)
 - ✅ Better reactivity
 - ✅ More maintainable code
 - ✅ Consistent pattern across all nodes
@@ -239,12 +263,23 @@ The project has recently been migrated to use VueFlow's native composables. Task
 
 ## 📊 Project Metrics
 
+### FlowCanvasView.vue Evolution
+
+| Metric | v1.0 | v2.0 | v3.0 (Current) |
+|--------|------|------|----------------|
+| Total lines | ~850 | ~850 | ~177 |
+| UI Components | 0 | 0 | 3 |
+| Composables | 0 | 0 | 7 |
+| Reduction | - | - | **-79.2%** |
+
+### Store Simplification
+
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
-| Total lines | ~150 | ~50 | **-67%** |
 | Store actions | 9 | 4 | **-56%** |
 | Store getters | 2 | 0 | **-100%** |
 | Manual lookups | ~80 | 0 | **-100%** |
+| Stores count | 1 | 2 | Settings added |
 
 ---
 
@@ -270,6 +305,14 @@ For questions or issues:
 
 ## 📝 Documentation Changelog
 
+### 2025-12-17 - Modularization Documentation
+
+- ✅ Updated architecture with composables section
+- ✅ Added settings store documentation
+- ✅ Updated project structure and metrics
+- ✅ Documented new features (keyboard shortcuts, groups, copy/paste)
+- ✅ Added modularization plan reference
+
 ### 2025-12-11 - Complete Documentation
 
 - ✅ Complete architecture guide
@@ -280,6 +323,6 @@ For questions or issues:
 
 ---
 
-**Last updated:** December 11th, 2025
+**Last updated:** December 17th, 2025
 
-**Flora Version:** 2.0 (Post-migration to VueFlow composables)
+**Flora Version:** 3.0 (Modularization with composables pattern)
