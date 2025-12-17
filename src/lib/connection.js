@@ -32,12 +32,12 @@ export function getEdgePortType(edge, nodes, registry, isSource = true) {
 }
 
 /**
- * Validates if two port types are compatible to connect
+ * Validates if two port types are compatible to connect (private)
  * @param {string} sourcePortType - Output port type
  * @param {string} targetPortType - Input port type
  * @returns {boolean} true if compatible, false otherwise
  */
-export function canConnect(sourcePortType, targetPortType) {
+function canConnect(sourcePortType, targetPortType) {
   // Ports must be of the same type to connect
   return sourcePortType === targetPortType
 }

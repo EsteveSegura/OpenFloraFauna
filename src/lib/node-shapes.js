@@ -74,63 +74,9 @@ export function createNode(id, type, position, data, io) {
 }
 
 /**
- * Creates an edge with its complete schema
- * @param {string} id - Edge ID
- * @param {string} source - Source node ID
- * @param {string} target - Target node ID
- * @param {string} [sourceHandle] - Source handle
- * @param {string} [targetHandle] - Target handle
- * @param {string} [type] - Edge type
- * @returns {EdgeShape}
+ * IO configuration definitions per node type (private)
  */
-export function createEdge(id, source, target, sourceHandle = null, targetHandle = null, type = null) {
-  const edge = {
-    id,
-    source,
-    target
-  }
-
-  if (sourceHandle) edge.sourceHandle = sourceHandle
-  if (targetHandle) edge.targetHandle = targetHandle
-  if (type) edge.type = type
-
-  return edge
-}
-
-/**
- * Validates if a node complies with the schema
- * @param {*} node - Node to validate
- * @returns {boolean}
- */
-export function isValidNode(node) {
-  if (!node || typeof node !== 'object') return false
-  if (!node.id || typeof node.id !== 'string') return false
-  if (!node.type || typeof node.type !== 'string') return false
-  if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') return false
-  if (!node.data || typeof node.data !== 'object') return false
-  if (!node.io || !Array.isArray(node.io.inputs) || !Array.isArray(node.io.outputs)) return false
-
-  return true
-}
-
-/**
- * Validates if an edge complies with the schema
- * @param {*} edge - Edge to validate
- * @returns {boolean}
- */
-export function isValidEdge(edge) {
-  if (!edge || typeof edge !== 'object') return false
-  if (!edge.id || typeof edge.id !== 'string') return false
-  if (!edge.source || typeof edge.source !== 'string') return false
-  if (!edge.target || typeof edge.target !== 'string') return false
-
-  return true
-}
-
-/**
- * IO configuration definitions per node type
- */
-export const NODE_IO_CONFIG = {
+const NODE_IO_CONFIG = {
   [NODE_TYPES.IMAGE]: {
     inputs: [],
     outputs: [PORT_TYPES.IMAGE]
