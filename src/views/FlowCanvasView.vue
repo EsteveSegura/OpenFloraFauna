@@ -45,6 +45,9 @@
         :multi-selection-key-code="['Meta', 'Control']"
         :nodes-draggable="!isLocked"
         :pan-on-drag="!isLocked"
+        :connection-radius="60"
+        :snap-to-handle="true"
+        :connection-line-style="{ strokeWidth: 2 }"
         elevate-edges-on-select
         elevate-nodes-on-select
       >
