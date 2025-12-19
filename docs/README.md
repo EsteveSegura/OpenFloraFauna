@@ -66,14 +66,16 @@ npm run dev
 npm run build
 ```
 
-### Configure Replicate API Key
+### Configure API Keys
 
-1. Create a `.env` file in the project root:
-   ```
-   VITE_REPLICATE_API_TOKEN=your_token_here
-   ```
+Configure your API keys through the Settings UI:
 
-2. Get your API key at: https://replicate.com/account/api-tokens
+1. Open the application
+2. Click the Settings button (⚙️)
+3. Enter your API keys:
+   - **Replicate API Key**: Get it from https://replicate.com/account/api-tokens
+   - **OpenAI API Key**: Get it from https://platform.openai.com/api-keys
+4. Keys are automatically saved to localStorage
 
 ---
 

@@ -6,13 +6,19 @@ Service layer for interacting with Replicate API to generate images using AI mod
 
 ### API Token
 
-Set your Replicate API token in a `.env` file:
+Configure your Replicate API token through the Settings UI:
 
-```bash
-VITE_REPLICATE_API_TOKEN=your_token_here
+1. Open the application and click the Settings button (⚙️)
+2. Enter your Replicate API Key in the "API Keys" section
+3. Get your token from: https://replicate.com/account/api-tokens
+4. The key is automatically saved to localStorage
+
+Alternatively, you can set the token programmatically:
+
+```javascript
+import replicateService from '@/services/replicate'
+replicateService.setApiToken('your_token_here')
 ```
-
-Get your token from: https://replicate.com/account/api-tokens
 
 ### Mock Mode
 
@@ -151,7 +157,7 @@ Generate an image using a Replicate model.
 
 ### `setApiToken(token)`
 
-Set the API token programmatically (alternative to environment variable).
+Set the API token programmatically (alternative to Settings UI).
 
 ### `listModels()`
 
