@@ -27,7 +27,7 @@ const MODELS = {
  */
 const DEFAULT_CONFIG = {
   timeout: 120000, // 2 minutes
-  apiUrl: (import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787') + '/v1',
+  apiUrl: import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787',
   model: 'nano-banana-pro'
 }
 
@@ -49,7 +49,7 @@ class ReplicateService {
   }
 
   /**
-   * Get API token from settings store, environment, or stored value
+   * Get API token from settings store or stored value
    * @returns {string|null}
    */
   getApiToken() {
@@ -67,11 +67,6 @@ class ReplicateService {
     // Fallback to stored value
     if (this.apiToken) {
       return this.apiToken
-    }
-
-    // Last fallback to environment variable
-    if (import.meta.env.VITE_REPLICATE_API_TOKEN) {
-      return import.meta.env.VITE_REPLICATE_API_TOKEN
     }
 
     return null
@@ -191,12 +186,15 @@ class ReplicateService {
     // Check for API token
     const token = this.getApiToken()
     if (!token) {
-      throw new Error('No Replicate API token found. Please set VITE_REPLICATE_API_TOKEN in your .env file')
+      throw new Error('No Replicate API token found. Please configure it in Settings.')
     }
+
+    // Build complete endpoint URL
+    const endpoint = this.config.apiUrl + model.endpointPath
 
     // Make API call
     try {
-      const response = await this._callApi(model.endpoint, input, token, model)
+      const response = await this._callApi(endpoint, input, token, model)
       return model.parseResponse(response)
     } catch (error) {
       throw this._handleError(error)
@@ -267,9 +265,12 @@ class ReplicateService {
       return this._mockGenerate(prompt, imageInput)
     }
 
+    // Build complete endpoint URL
+    const endpoint = this.config.apiUrl + model.endpointPath
+
     // Make API call
     try {
-      const response = await this._callApi(model.endpoint, input, token, model)
+      const response = await this._callApi(endpoint, input, token, model)
       return model.parseResponse(response)
     } catch (error) {
       throw this._handleError(error)
@@ -283,8 +284,8 @@ class ReplicateService {
    * @private
    */
   _transformUrlToProxy(url) {
-    // Replace https://api.replicate.com/v1 with configured API URL
-    return url.replace('https://api.replicate.com/v1', this.config.apiUrl)
+    // Replace only the domain, keeping the path (including /v1)
+    return url.replace('https://api.replicate.com', this.config.apiUrl)
   }
 
   /**

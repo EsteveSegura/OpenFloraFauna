@@ -36,7 +36,6 @@
             v-model="replicateKey"
             type="password"
             placeholder="Enter your Replicate API key"
-            @blur="saveReplicateKey"
           />
           <p class="settings-option-description">
             Used for AI image generation. Get your key at
@@ -54,7 +53,6 @@
             v-model="openaiKey"
             type="password"
             placeholder="Enter your OpenAI API key"
-            @blur="saveOpenaiKey"
           />
           <p class="settings-option-description">
             Used for text generation (GPT-5). Get your key at
@@ -99,27 +97,31 @@ const isOpen = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-// Local state for API keys
+// Local state for API keys - initialized from store
 const replicateKey = ref(settingsStore.replicateApiKey)
 const openaiKey = ref(settingsStore.openaiApiKey)
 
-// Watch for external changes to the store
+// Auto-save when keys change
+watch(replicateKey, (newValue) => {
+  settingsStore.setReplicateApiKey(newValue)
+})
+
+watch(openaiKey, (newValue) => {
+  settingsStore.setOpenaiApiKey(newValue)
+})
+
+// Watch for external changes to the store (when cleared programmatically)
 watch(() => settingsStore.replicateApiKey, (newValue) => {
-  replicateKey.value = newValue
+  if (newValue !== replicateKey.value) {
+    replicateKey.value = newValue
+  }
 })
 
 watch(() => settingsStore.openaiApiKey, (newValue) => {
-  openaiKey.value = newValue
+  if (newValue !== openaiKey.value) {
+    openaiKey.value = newValue
+  }
 })
-
-// Save functions
-function saveReplicateKey() {
-  settingsStore.setReplicateApiKey(replicateKey.value)
-}
-
-function saveOpenaiKey() {
-  settingsStore.setOpenaiApiKey(openaiKey.value)
-}
 
 function handleClearKeys() {
   if (confirm('Are you sure you want to clear all API keys?')) {

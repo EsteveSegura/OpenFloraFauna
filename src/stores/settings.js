@@ -75,31 +75,17 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   /**
-   * Get Replicate API key (prioritize store over env)
+   * Get Replicate API key from settings
    */
   function getReplicateApiKey() {
-    if (replicateApiKey.value) {
-      return replicateApiKey.value
-    }
-    // Fallback to environment variable
-    if (import.meta.env.VITE_REPLICATE_API_TOKEN) {
-      return import.meta.env.VITE_REPLICATE_API_TOKEN
-    }
-    return null
+    return replicateApiKey.value || null
   }
 
   /**
-   * Get OpenAI API key (prioritize store over env)
+   * Get OpenAI API key from settings
    */
   function getOpenaiApiKey() {
-    if (openaiApiKey.value) {
-      return openaiApiKey.value
-    }
-    // Fallback to environment variable
-    if (import.meta.env.VITE_OPENAI_API_KEY) {
-      return import.meta.env.VITE_OPENAI_API_KEY
-    }
-    return null
+    return openaiApiKey.value || null
   }
 
   /**

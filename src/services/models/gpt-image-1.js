@@ -3,13 +3,15 @@
  * Model: openai/gpt-image-1
  */
 
+import { useSettingsStore } from '@/stores/settings'
+
 export const GPT_IMAGE_1 = {
   id: 'gpt-image-1',
   name: 'GPT Image 1',
   owner: 'openai',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpoint: `${import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787'}/v1/models/openai/gpt-image-1/predictions`,
+  endpointPath: '/v1/models/openai/gpt-image-1/predictions',
 
   /**
    * Default parameters for the model
@@ -99,10 +101,12 @@ export const GPT_IMAGE_1 = {
       throw new Error('Prompt is required and must be a non-empty string')
     }
 
-    // Get OpenAI API key from environment
-    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY
+    // Get OpenAI API key from settings store
+    const settingsStore = useSettingsStore()
+    const openaiApiKey = settingsStore.getOpenaiApiKey()
+
     if (!openaiApiKey) {
-      throw new Error('OpenAI API key is required. Please set VITE_OPENAI_API_KEY in your .env file')
+      throw new Error('OpenAI API key is required. Please configure it in Settings.')
     }
 
     const input = {
