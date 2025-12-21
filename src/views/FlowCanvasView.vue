@@ -55,6 +55,9 @@
       </VueFlow>
     </div>
 
+    <!-- Intro Modal -->
+    <IntroModal v-model="showIntro" />
+
     <!-- Settings Modal -->
     <SettingsModal v-model="isSettingsModalOpen" />
   </div>
@@ -70,6 +73,7 @@ import nodeRegistry from '@/lib/node-registry'
 import FloatingMenu from '@/components/canvas/FloatingMenu.vue'
 import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
+import IntroModal from '@/components/canvas/IntroModal.vue'
 import { useFlowIO } from '@/composables/useFlowIO'
 import { useViewportControls } from '@/composables/useViewportControls'
 import { useCopyPaste } from '@/composables/useCopyPaste'
@@ -85,6 +89,7 @@ const mousePosition = ref({ x: 0, y: 0 })
 const floatingMenu = ref(null)
 const sidebarMenu = ref(null)
 const isSettingsModalOpen = ref(false)
+const showIntro = ref(false)
 
 // VueFlow composable
 const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
@@ -163,6 +168,11 @@ function onMouseMove(event) {
 // Setup click outside handler
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+
+  // Show intro modal if canvas is empty
+  if (flowStore.nodes.length === 0) {
+    showIntro.value = true
+  }
 })
 
 onUnmounted(() => {
