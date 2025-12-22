@@ -1,6 +1,11 @@
 <template>
   <div class="flow-canvas-container">
-    <!-- Canvas de VueFlow -->
+    <!-- Alert Banner -->
+    <AlertBanner v-if="showAlert" type-alert="alert">
+      You don't have a Replicate API key, <strong>you cannot make AI inferences</strong> without a key. Get yours <a href="https://youtu.be/ukJTEuO4QUU" target="_blank" rel="noopener noreferrer">here</a>
+    </AlertBanner>
+
+    <!-- Canvas VueFlow -->
     <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent @mousemove="onMouseMove">
       <!-- Floating Menu -->
       <FloatingMenu
@@ -68,12 +73,14 @@ import { computed, onMounted, onUnmounted, ref, markRaw } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { useFlowStore } from '@/stores/flow'
+import { useSettingsStore } from '@/stores/settings'
 import { validateConnection } from '@/lib/connection'
 import nodeRegistry from '@/lib/node-registry'
 import FloatingMenu from '@/components/canvas/FloatingMenu.vue'
 import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
+import AlertBanner from '@/components/canvas/AlertBanner.vue'
 import { useFlowIO } from '@/composables/useFlowIO'
 import { useViewportControls } from '@/composables/useViewportControls'
 import { useCopyPaste } from '@/composables/useCopyPaste'
@@ -83,6 +90,7 @@ import { useGroupManagement } from '@/composables/useGroupManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const flowStore = useFlowStore()
+const settingsStore = useSettingsStore()
 
 const isNodesMenuOpen = ref(false)
 const mousePosition = ref({ x: 0, y: 0 })
@@ -90,6 +98,9 @@ const floatingMenu = ref(null)
 const sidebarMenu = ref(null)
 const isSettingsModalOpen = ref(false)
 const showIntro = ref(false)
+
+// Show alert if no Replicate API key is configured
+const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
 // VueFlow composable
 const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
