@@ -87,7 +87,7 @@ const NODE_IO_CONFIG = {
     outputs: [PORT_TYPES.IMAGE]
   },
   [NODE_TYPES.PROMPT]: {
-    inputs: [],
+    inputs: [PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.PROMPT]
   },
   [NODE_TYPES.PROMPT_TEMPLATE]: {

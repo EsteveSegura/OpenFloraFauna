@@ -51,7 +51,7 @@ export function registerAllNodes() {
     type: NODE_TYPES.PROMPT,
     label: 'Prompt',
     description: 'Text prompt node - provide prompts for image generation',
-    inputs: [],
+    inputs: [PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.PROMPT],
     component: PromptNode,
     config: {
